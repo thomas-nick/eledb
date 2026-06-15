@@ -1,36 +1,100 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Asian Elephant Conservation
 
-## Getting Started
+A digital resource platform for Asian elephant conservation — connecting community-driven data, immersive education, and direct, transparent action across 13 range states.
 
-First, run the development server:
+## Quick Start
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view the site.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build   # Production build
+npm start       # Serve production build
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Architecture
 
-## Learn More
+Built with **Next.js (App Router)**, **TypeScript**, and **Tailwind CSS**. Content is served from typed local data files in `src/data/` — designed as drop-in replacements for a headless CMS.
 
-To learn more about Next.js, take a look at the following resources:
+### Three Pillars
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Pillar | Route | Description |
+|--------|-------|-------------|
+| A — Coexistence Map | `/coexistence` | Interactive SVG map of 13 range states with migration corridors and coexistence hotspot case studies |
+| B — Sanctuary Guide | `/sanctuaries` | Searchable welfare-matrix registry + "Before You Book" decision tree |
+| C — Adopt a Corridor | `/corridors` | Corridor funding portal + DNA sampling kit sponsorship |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Additional Routes
 
-## Deploy on Vercel
+- `/` — Home with hero, stats, pillar overview, latest resources
+- `/donate` — UI-only multi-step donation flow (demo mode)
+- `/resources` — Editorial field notes and science articles
+- `/about` — Mission and 13 range state population table
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Project Structure
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/
+├── app/                    # Next.js App Router pages
+├── components/
+│   ├── ui/                 # Design system primitives
+│   ├── layout/             # Header, Footer
+│   ├── map/                # RangeMap, HotspotPanel
+│   ├── sanctuaries/        # SanctuaryCard
+│   ├── corridors/          # CorridorCard, DnaExplainer
+│   ├── donate/             # DonationFlow, FundraisingChart
+│   ├── home/               # Hero, Stats, PillarCards
+│   └── tools/              # DecisionTree
+├── data/                   # Typed local data (CMS stand-in)
+│   ├── rangeStates.ts
+│   ├── hotspots.ts
+│   ├── sanctuaries.ts
+│   ├── corridors.ts
+│   ├── dna.ts
+│   ├── articles.ts
+│   └── stats.ts
+└── lib/
+    └── utils.ts
+```
+
+## Future Integration Points
+
+### Strapi CMS
+Replace imports from `src/data/*.ts` with API calls to Strapi content types:
+- `range-state`, `hotspot`, `sanctuary`, `corridor`, `dna-kit`, `article`
+
+Each data file exports typed interfaces — keep these as your API response types.
+
+### Algolia / Typesense
+The sanctuary registry (`/sanctuaries`) uses client-side fuzzy search. Swap the filter logic in `src/app/sanctuaries/page.tsx` with an instant search client:
+
+```typescript
+// Example: Typesense integration point
+const results = await typesenseClient
+  .collections("sanctuaries")
+  .documents()
+  .search({ q: searchQuery, query_by: "name,country,region" });
+```
+
+### Stripe Payments
+The donation flow (`/donate`) is structured for Stripe Checkout:
+1. Replace `handleConfirm()` in `src/components/donate/DonationFlow.tsx` with a server action that creates a Stripe Checkout Session
+2. Pass `intent` and `id` query params as metadata for corridor/DNA kit attribution
+3. Add a webhook handler at `src/app/api/webhooks/stripe/route.ts` for fulfillment
+
+### Mapbox / MapLibre GIS
+The stylized SVG map in `src/components/map/RangeMap.tsx` can be replaced with a real GIS layer. Hotspot coordinates in `src/data/hotspots.ts` are already structured as `{ x, y }` — convert to `{ lat, lng }` for Mapbox.
+
+## Design System
+
+- **Palette:** Forest green (`#1a3a2a`), ivory (`#f7f4ef`), clay (`#c47d5a`)
+- **Typography:** Playfair Display (headings) + Source Sans 3 (body)
+- **Primitives:** Button, Card, Badge, Stat, SectionHeading, Container in `src/components/ui/`
+
+## License
+
+Built for Asian elephant conservation. All placeholder data is fictional and for demonstration purposes.

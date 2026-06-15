@@ -6,21 +6,33 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "sync:init": "tsx scripts/sync-elephant-se/sync.ts init",
+    "sync:migrate": "tsx scripts/sync-elephant-se/sync.ts migrate",
+    "sync:elephants": "tsx scripts/sync-elephant-se/sync.ts",
+    "sync:thailand": "tsx scripts/sync-elephant-se/sync.ts --thailand",
+    "sync:all": "tsx scripts/sync-elephant-se/sync.ts --all"
   },
   "dependencies": {
+    "dotenv": "^16.6.1",
+    "fast-xml-parser": "^5.2.5",
+    "framer-motion": "^12.40.0",
+    "mysql2": "^3.14.1",
     "next": "16.2.9",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "recharts": "^3.8.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cheerio": "^1.1.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "tailwindcss": "^4",
+    "tsx": "^4.20.3",
     "typescript": "^5"
   }
 }

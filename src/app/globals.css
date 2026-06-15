@@ -1,26 +1,49 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f7f4ef;
+  --foreground: #1a2e24;
+  --forest: #1a3a2a;
+  --forest-light: #2d5a42;
+  --ivory: #f7f4ef;
+  --clay: #c47d5a;
+  --clay-light: #e8c4b0;
+  --sage: #8fa88a;
+  --muted: #6b7c72;
+  --card: #ffffff;
+  --border: #e2ddd4;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-forest: var(--forest);
+  --color-forest-light: var(--forest-light);
+  --color-ivory: var(--ivory);
+  --color-clay: var(--clay);
+  --color-clay-light: var(--clay-light);
+  --color-sage: var(--sage);
+  --color-muted: var(--muted);
+  --color-card: var(--card);
+  --color-border: var(--border);
+  --font-sans: var(--font-source-sans);
+  --font-serif: var(--font-playfair);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-source-sans), system-ui, sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-playfair), Georgia, serif;
+}
+
+::selection {
+  background: var(--clay-light);
+  color: var(--forest);
 }

@@ -1,0 +1,506 @@
+import mysql, { type Pool, type RowDataPacket } from "mysql2/promise";
+import type {
+  ElephantRecord,
+  ElephantSearchParams,
+  ElephantSearchResult,
+  ElephantSort,
+} from "@/types/elephant";
+
+export const ELEPHANTS_SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS elephants (
+  id VARCHAR(32) NOT NULL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  sex ENUM('male', 'female', 'unknown') NOT NULL DEFAULT 'unknown',
+  status ENUM('living', 'deceased') NOT NULL DEFAULT 'living',
+  species VARCHAR(32) NOT NULL DEFAULT 'asian',
+  subspecies VARCHAR(32) NOT NULL DEFAULT 'unknown',
+  birth_date VARCHAR(32) NULL,
+  birth_place VARCHAR(512) NULL,
+  death_date VARCHAR(32) NULL,
+  death_reason VARCHAR(512) NULL,
+  age_years INT NULL,
+  origin ENUM('wild-caught', 'captive-born', 'unknown') NOT NULL DEFAULT 'unknown',
+  location_id VARCHAR(32) NULL,
+  location_name VARCHAR(512) NOT NULL,
+  country VARCHAR(128) NOT NULL,
+  category VARCHAR(32) NOT NULL DEFAULT 'other',
+  chip_id VARCHAR(64) NULL,
+  local_id VARCHAR(64) NULL,
+  regional_ids JSON NULL,
+  father_name VARCHAR(255) NULL,
+  mother_name VARCHAR(255) NULL,
+  father_id VARCHAR(32) NULL,
+  mother_id VARCHAR(32) NULL,
+  arrival_date VARCHAR(32) NULL,
+  management VARCHAR(255) NULL,
+  transfers JSON NULL,
+  photos JSON NULL,
+  sources JSON NULL,
+  source_url VARCHAR(512) NOT NULL,
+  synced_at DATETIME NOT NULL,
+  INDEX idx_country (country),
+  INDEX idx_status (status),
+  INDEX idx_sex (sex),
+  INDEX idx_category (category),
+  INDEX idx_subspecies (subspecies),
+  INDEX idx_location_id (location_id),
+  INDEX idx_father_id (father_id),
+  INDEX idx_mother_id (mother_id),
+  INDEX idx_location_name (location_name(191)),
+  FULLTEXT idx_search (name, location_name, country, father_name, mother_name, chip_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+`;
+
+const MIGRATION_COLUMNS: { name: string; ddl: string }[] = [
+  { name: "subspecies", ddl: "ADD COLUMN subspecies VARCHAR(32) NOT NULL DEFAULT 'unknown'" },
+  { name: "birth_place", ddl: "ADD COLUMN birth_place VARCHAR(512) NULL" },
+  { name: "death_reason", ddl: "ADD COLUMN death_reason VARCHAR(512) NULL" },
+  { name: "origin", ddl: "ADD COLUMN origin ENUM('wild-caught', 'captive-born', 'unknown') NOT NULL DEFAULT 'unknown'" },
+  { name: "chip_id", ddl: "ADD COLUMN chip_id VARCHAR(64) NULL" },
+  { name: "local_id", ddl: "ADD COLUMN local_id VARCHAR(64) NULL" },
+  { name: "regional_ids", ddl: "ADD COLUMN regional_ids JSON NULL" },
+  { name: "transfers", ddl: "ADD COLUMN transfers JSON NULL" },
+  { name: "photos", ddl: "ADD COLUMN photos JSON NULL" },
+  { name: "sources", ddl: "ADD COLUMN sources JSON NULL" },
+];
+
+interface ElephantRow extends RowDataPacket {
+  id: string;
+  name: string;
+  sex: ElephantRecord["sex"];
+  status: ElephantRecord["status"];
+  species: "asian";
+  subspecies: ElephantRecord["subspecies"];
+  birth_date: string | null;
+  birth_place: string | null;
+  death_date: string | null;
+  death_reason: string | null;
+  age_years: number | null;
+  origin: ElephantRecord["origin"];
+  location_id: string | null;
+  location_name: string;
+  country: string;
+  category: ElephantRecord["category"];
+  chip_id: string | null;
+  local_id: string | null;
+  regional_ids: unknown;
+  father_name: string | null;
+  mother_name: string | null;
+  father_id: string | null;
+  mother_id: string | null;
+  arrival_date: string | null;
+  management: string | null;
+  transfers: unknown;
+  photos: unknown;
+  sources: unknown;
+  source_url: string;
+  synced_at: Date | string;
+}
+
+let pool: Pool | null = null;
+let facetCache: { key: string; data: ElephantSearchResult["facets"]; expires: number } | null = null;
+const FACET_CACHE_MS = 5 * 60 * 1000;
+
+export function isMysqlConfigured(): boolean {
+  return Boolean(
+    process.env.MYSQL_HOST &&
+      process.env.MYSQL_USER &&
+      process.env.MYSQL_DATABASE &&
+      process.env.MYSQL_HOST !== "disabled"
+  );
+}
+
+export function getMysqlPool(): Pool {
+  if (!pool) {
+    pool = mysql.createPool({
+      host: process.env.MYSQL_HOST,
+      port: Number(process.env.MYSQL_PORT ?? 3306),
+      user: process.env.MYSQL_USER,
+      password: process.env.MYSQL_PASSWORD,
+      database: process.env.MYSQL_DATABASE,
+      waitForConnections: true,
+      connectionLimit: 8,
+      timezone: "Z",
+    });
+  }
+  return pool;
+}
+
+function parseJson<T>(value: unknown): T | undefined {
+  if (value == null) return undefined;
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value) as T;
+    } catch {
+      return undefined;
+    }
+  }
+  return value as T;
+}
+
+function formatDate(value: string | Date | null | undefined): string | undefined {
+  if (!value) return undefined;
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return String(value).slice(0, 32);
+}
+
+function rowToRecord(row: ElephantRow): ElephantRecord {
+  return {
+    id: row.id,
+    name: row.name,
+    sex: row.sex,
+    status: row.status,
+    species: "asian",
+    subspecies: row.subspecies ?? "unknown",
+    birthDate: formatDate(row.birth_date),
+    birthPlace: row.birth_place ?? undefined,
+    deathDate: formatDate(row.death_date),
+    deathReason: row.death_reason ?? undefined,
+    ageYears: row.age_years ?? undefined,
+    origin: row.origin ?? "unknown",
+    locationId: row.location_id ?? undefined,
+    locationName: row.location_name,
+    country: row.country,
+    category: row.category,
+    chipId: row.chip_id ?? undefined,
+    localId: row.local_id ?? undefined,
+    regionalIds: parseJson<Record<string, string>>(row.regional_ids),
+    fatherName: row.father_name ?? undefined,
+    motherName: row.mother_name ?? undefined,
+    fatherId: row.father_id ?? undefined,
+    motherId: row.mother_id ?? undefined,
+    arrivalDate: formatDate(row.arrival_date),
+    management: row.management ?? undefined,
+    transfers: parseJson<ElephantRecord["transfers"]>(row.transfers),
+    photos: parseJson<ElephantRecord["photos"]>(row.photos),
+    sources: parseJson<string[]>(row.sources),
+    sourceUrl: row.source_url,
+    syncedAt:
+      row.synced_at instanceof Date
+        ? row.synced_at.toISOString()
+        : new Date(row.synced_at).toISOString(),
+  };
+}
+
+function recordToRow(record: ElephantRecord) {
+  return [
+    record.id,
+    record.name,
+    record.sex,
+    record.status,
+    record.species,
+    record.subspecies ?? "unknown",
+    record.birthDate || null,
+    record.birthPlace || null,
+    record.deathDate || null,
+    record.deathReason || null,
+    record.ageYears ?? null,
+    record.origin ?? "unknown",
+    record.locationId || null,
+    record.locationName,
+    record.country,
+    record.category,
+    record.chipId || null,
+    record.localId || null,
+    record.regionalIds ? JSON.stringify(record.regionalIds) : null,
+    record.fatherName || null,
+    record.motherName || null,
+    record.fatherId || null,
+    record.motherId || null,
+    record.arrivalDate || null,
+    record.management || null,
+    record.transfers ? JSON.stringify(record.transfers) : null,
+    record.photos ? JSON.stringify(record.photos) : null,
+    record.sources ? JSON.stringify(record.sources) : null,
+    record.sourceUrl,
+    new Date(record.syncedAt),
+  ];
+}
+
+export async function initElephantSchema(): Promise<void> {
+  const db = getMysqlPool();
+  await db.query(ELEPHANTS_SCHEMA_SQL);
+}
+
+export async function migrateElephantSchema(): Promise<void> {
+  const db = getMysqlPool();
+  await db.query(ELEPHANTS_SCHEMA_SQL);
+
+  const [existing] = await db.query<RowDataPacket[]>(
+    `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'elephants'`
+  );
+  const columnNames = new Set(existing.map((r) => String(r.COLUMN_NAME)));
+
+  for (const col of MIGRATION_COLUMNS) {
+    if (!columnNames.has(col.name)) {
+      await db.query(`ALTER TABLE elephants ${col.ddl}`);
+      console.log(`Added column: ${col.name}`);
+    }
+  }
+
+  const dateColumns = ["birth_date", "death_date", "arrival_date"];
+  for (const col of dateColumns) {
+    if (columnNames.has(col)) {
+      try {
+        await db.query(`ALTER TABLE elephants MODIFY ${col} VARCHAR(32) NULL`);
+      } catch {
+        // already varchar
+      }
+    }
+  }
+
+  const indexMigrations = [
+    "CREATE INDEX idx_subspecies ON elephants (subspecies)",
+    "CREATE INDEX idx_father_id ON elephants (father_id)",
+    "CREATE INDEX idx_mother_id ON elephants (mother_id)",
+  ];
+  for (const sql of indexMigrations) {
+    try {
+      await db.query(sql);
+    } catch {
+      // index may already exist
+    }
+  }
+}
+
+export async function upsertElephants(records: ElephantRecord[]): Promise<void> {
+  if (records.length === 0) return;
+  facetCache = null;
+  const db = getMysqlPool();
+  const sql = `
+    INSERT INTO elephants (
+      id, name, sex, status, species, subspecies, birth_date, birth_place, death_date,
+      death_reason, age_years, origin, location_id, location_name, country, category,
+      chip_id, local_id, regional_ids, father_name, mother_name, father_id, mother_id,
+      arrival_date, management, transfers, photos, sources, source_url, synced_at
+    ) VALUES ?
+    ON DUPLICATE KEY UPDATE
+      name = VALUES(name),
+      sex = VALUES(sex),
+      status = VALUES(status),
+      species = VALUES(species),
+      subspecies = VALUES(subspecies),
+      birth_date = VALUES(birth_date),
+      birth_place = VALUES(birth_place),
+      death_date = VALUES(death_date),
+      death_reason = VALUES(death_reason),
+      age_years = VALUES(age_years),
+      origin = VALUES(origin),
+      location_id = VALUES(location_id),
+      location_name = VALUES(location_name),
+      country = VALUES(country),
+      category = VALUES(category),
+      chip_id = VALUES(chip_id),
+      local_id = VALUES(local_id),
+      regional_ids = VALUES(regional_ids),
+      father_name = VALUES(father_name),
+      mother_name = VALUES(mother_name),
+      father_id = VALUES(father_id),
+      mother_id = VALUES(mother_id),
+      arrival_date = VALUES(arrival_date),
+      management = VALUES(management),
+      transfers = VALUES(transfers),
+      photos = VALUES(photos),
+      sources = VALUES(sources),
+      source_url = VALUES(source_url),
+      synced_at = VALUES(synced_at)
+  `;
+  const rows = records.map(recordToRow);
+  await db.query(sql, [rows]);
+}
+
+type FilterClause = { sql: string; params: (string | number)[] };
+
+function buildFilters(params: ElephantSearchParams): FilterClause {
+  const parts: string[] = [];
+  const values: (string | number)[] = [];
+
+  if (params.country) {
+    parts.push("country = ?");
+    values.push(params.country);
+  }
+  if (params.status) {
+    parts.push("status = ?");
+    values.push(params.status);
+  }
+  if (params.sex) {
+    parts.push("sex = ?");
+    values.push(params.sex);
+  }
+  if (params.subspecies) {
+    parts.push("subspecies = ?");
+    values.push(params.subspecies);
+  }
+  if (params.locationId) {
+    parts.push("location_id = ?");
+    values.push(params.locationId);
+  }
+  if (params.locationName) {
+    parts.push("location_name = ?");
+    values.push(params.locationName);
+  }
+  if (params.category) {
+    parts.push("category = ?");
+    values.push(params.category);
+  }
+
+  return {
+    sql: parts.length ? ` AND ${parts.join(" AND ")}` : "",
+    params: values,
+  };
+}
+
+function buildSearchClause(q?: string): FilterClause {
+  const term = q?.trim();
+  if (!term) return { sql: "", params: [] };
+
+  if (term.length >= 3) {
+    return {
+      sql: ` AND (
+        MATCH(name, location_name, country, father_name, mother_name, chip_id) AGAINST (? IN NATURAL LANGUAGE MODE)
+        OR name LIKE ?
+        OR location_name LIKE ?
+        OR chip_id LIKE ?
+      )`,
+      params: [term, `%${term}%`, `%${term}%`, `%${term}%`],
+    };
+  }
+
+  const like = `%${term}%`;
+  return {
+    sql: ` AND (
+      name LIKE ? OR location_name LIKE ? OR country LIKE ?
+      OR father_name LIKE ? OR mother_name LIKE ? OR chip_id LIKE ?
+    )`,
+    params: [like, like, like, like, like, like],
+  };
+}
+
+function buildOrderClause(sort?: ElephantSort): string {
+  switch (sort) {
+    case "age":
+      return "ORDER BY age_years IS NULL, age_years DESC, name ASC";
+    case "updated":
+      return "ORDER BY synced_at DESC, name ASC";
+    default:
+      return "ORDER BY name ASC";
+  }
+}
+
+async function facetQuery(
+  db: Pool,
+  column: string,
+  baseWhere: string,
+  baseParams: (string | number)[]
+) {
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT ${column} AS value, COUNT(*) AS count
+     FROM elephants
+     WHERE 1=1 ${baseWhere} AND ${column} IS NOT NULL AND ${column} != ''
+     GROUP BY ${column}
+     ORDER BY count DESC
+     LIMIT 30`,
+    baseParams
+  );
+  return rows.map((row) => ({
+    value: String(row.value),
+    count: Number(row.count),
+  }));
+}
+
+async function getGlobalFacets(db: Pool): Promise<ElephantSearchResult["facets"]> {
+  const cacheKey = "global";
+  if (facetCache && facetCache.key === cacheKey && facetCache.expires > Date.now()) {
+    return facetCache.data;
+  }
+
+  const [countries, statuses, categories, subspecies, locations] = await Promise.all([
+    facetQuery(db, "country", "", []),
+    facetQuery(db, "status", "", []),
+    facetQuery(db, "category", "", []),
+    facetQuery(db, "subspecies", "", []),
+    facetQuery(db, "location_name", "", []),
+  ]);
+
+  const facets = { countries, statuses, categories, subspecies, locations };
+  facetCache = { key: cacheKey, data: facets, expires: Date.now() + FACET_CACHE_MS };
+  return facets;
+}
+
+export async function searchElephantsMysql(
+  params: ElephantSearchParams
+): Promise<ElephantSearchResult> {
+  const db = getMysqlPool();
+  const page = params.page ?? 1;
+  const perPage = params.perPage ?? 24;
+  const offset = (page - 1) * perPage;
+
+  const filters = buildFilters(params);
+  const search = buildSearchClause(params.q);
+  const where = `${filters.sql}${search.sql}`;
+  const whereParams = [...filters.params, ...search.params];
+
+  const [countRows] = await db.query<RowDataPacket[]>(
+    `SELECT COUNT(*) AS total FROM elephants WHERE 1=1 ${where}`,
+    whereParams
+  );
+  const total = Number(countRows[0]?.total ?? 0);
+
+  const [rows] = await db.query<ElephantRow[]>(
+    `SELECT * FROM elephants
+     WHERE 1=1 ${where}
+     ${buildOrderClause(params.sort)}
+     LIMIT ? OFFSET ?`,
+    [...whereParams, perPage, offset]
+  );
+
+  const facets = await getGlobalFacets(db);
+
+  return {
+    elephants: rows.map(rowToRecord),
+    total,
+    page,
+    perPage,
+    facets,
+    source: "mysql",
+  };
+}
+
+export async function getElephantByIdMysql(id: string): Promise<ElephantRecord | null> {
+  const db = getMysqlPool();
+  const [rows] = await db.query<ElephantRow[]>(
+    "SELECT * FROM elephants WHERE id = ? LIMIT 1",
+    [id]
+  );
+  return rows[0] ? rowToRecord(rows[0]) : null;
+}
+
+export async function getOffspringMysql(id: string): Promise<ElephantRecord[]> {
+  const db = getMysqlPool();
+  const [rows] = await db.query<ElephantRow[]>(
+    `SELECT * FROM elephants WHERE father_id = ? OR mother_id = ? ORDER BY name ASC LIMIT 50`,
+    [id, id]
+  );
+  return rows.map(rowToRecord);
+}
+
+export async function getHerdMatesMysql(
+  locationId: string,
+  excludeId: string
+): Promise<ElephantRecord[]> {
+  const db = getMysqlPool();
+  const [rows] = await db.query<ElephantRow[]>(
+    `SELECT * FROM elephants
+     WHERE location_id = ? AND id != ? AND status = 'living'
+     ORDER BY name ASC LIMIT 30`,
+    [locationId, excludeId]
+  );
+  return rows.map(rowToRecord);
+}
+
+export async function countElephantsMysql(): Promise<number> {
+  const db = getMysqlPool();
+  const [rows] = await db.query<RowDataPacket[]>("SELECT COUNT(*) AS total FROM elephants");
+  return Number(rows[0]?.total ?? 0);
+}

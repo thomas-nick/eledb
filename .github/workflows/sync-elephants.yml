@@ -1,0 +1,74 @@
+name: Sync elephant.se → MySQL
+
+on:
+  schedule:
+    # Sundays 03:00 UTC — worldwide Asian elephant catalog refresh
+    - cron: "0 3 * * 0"
+  workflow_dispatch:
+    inputs:
+      reset:
+        description: Reset checkpoint and start crawl from ID 1
+        type: boolean
+        default: false
+
+concurrency:
+  group: elephant-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Restore crawl checkpoint
+        uses: actions/cache@v4
+        with:
+          path: scripts/sync-elephant-se/.checkpoint.json
+          key: elephant-sync-checkpoint-v1
+          restore-keys: |
+            elephant-sync-checkpoint-v1
+
+      - run: npm ci
+
+      - name: Migrate schema
+        env:
+          MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
+          MYSQL_PORT: ${{ secrets.MYSQL_PORT }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+        run: npm run sync:migrate
+
+      - name: Worldwide Asian elephant crawl
+        env:
+          MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
+          MYSQL_PORT: ${{ secrets.MYSQL_PORT }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          SYNC_MAX_ID: "18500"
+          SYNC_BATCH_SIZE: "50"
+          SYNC_DELAY_MS: "1200"
+          # Stop ~25 min before job timeout so checkpoint cache can save
+          SYNC_MAX_RUNTIME_MS: "19800000"
+        run: |
+          ARGS=""
+          if [ "${{ github.event.inputs.reset }}" = "true" ]; then
+            ARGS="--reset"
+          fi
+          npm run sync:all -- $ARGS
+
+      - name: Save crawl checkpoint
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: scripts/sync-elephant-se/.checkpoint.json
+          key: elephant-sync-checkpoint-v1
