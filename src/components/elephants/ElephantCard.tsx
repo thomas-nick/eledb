@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ElephantRecord } from "@/types/elephant";
+import { displayElephantName, isUnnamedRecord } from "@/lib/elephantNames";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 
@@ -19,13 +20,18 @@ interface ElephantCardProps {
 
 export function ElephantCard({ elephant }: ElephantCardProps) {
   const sub = elephant.subspecies ? subspeciesLabel[elephant.subspecies] : "";
+  const unnamed = isUnnamedRecord(elephant);
 
   return (
     <Link href={`/elephants/${elephant.id}`}>
       <Card hover className="h-full">
         <div className="flex items-start justify-between gap-2 mb-2">
-          <h3 className="font-serif text-lg font-bold text-forest leading-tight">
-            {elephant.name}
+          <h3
+            className={`font-serif text-lg font-bold leading-tight ${
+              unnamed ? "text-muted italic" : "text-forest"
+            }`}
+          >
+            {displayElephantName(elephant)}
           </h3>
           <Badge variant={statusVariant[elephant.status]} className="shrink-0 capitalize">
             {elephant.status}
@@ -33,6 +39,7 @@ export function ElephantCard({ elephant }: ElephantCardProps) {
         </div>
 
         <p className="text-sm text-muted mb-3">
+          {unnamed ? "No name at elephant.se · " : ""}
           {sexLabel[elephant.sex]}
           {sub && ` · ${sub}`}
           {elephant.ageYears != null && ` · ~${elephant.ageYears} yrs`}

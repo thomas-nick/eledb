@@ -64,7 +64,9 @@ export function ElephantSearch() {
   const sort = (searchParams.get("sort") as ElephantSort | null) ?? "name";
   const page = Number(searchParams.get("page") ?? 1);
   const locationId = searchParams.get("locationId") ?? "";
-  const locationName = searchParams.get("locationName") ?? "";
+  const locationName =
+    searchParams.get("locationName") ?? searchParams.get("location") ?? "";
+  const includeUnnamed = searchParams.get("includeUnnamed") === "true";
 
   const updateParams = useCallback(
     (updates: Record<string, string | null>) => {
@@ -96,6 +98,7 @@ export function ElephantSearch() {
     if (sort) params.set("sort", sort);
     if (locationId) params.set("locationId", locationId);
     if (locationName) params.set("locationName", locationName);
+    if (includeUnnamed) params.set("includeUnnamed", "true");
     params.set("page", String(page));
 
     setLoading(true);
@@ -106,7 +109,7 @@ export function ElephantSearch() {
       .finally(() => setLoading(false));
 
     return () => controller.abort();
-  }, [searchParams, country, status, sex, subspecies, category, sort, page, locationId, locationName]);
+  }, [searchParams, country, status, sex, subspecies, category, sort, page, locationId, locationName, includeUnnamed]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -274,6 +277,21 @@ export function ElephantSearch() {
                   {opt.label}
                 </FilterChip>
               ))}
+            </FilterRow>
+
+            <FilterRow label="Records">
+              <FilterChip
+                active={!includeUnnamed}
+                onClick={() => updateParams({ includeUnnamed: null })}
+              >
+                Named only
+              </FilterChip>
+              <FilterChip
+                active={includeUnnamed}
+                onClick={() => updateParams({ includeUnnamed: "true" })}
+              >
+                Include unnamed
+              </FilterChip>
             </FilterRow>
 
             <FilterRow label="Sex">

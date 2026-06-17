@@ -12,6 +12,7 @@ import type {
   ElephantSearchResult,
   ElephantSort,
 } from "@/types/elephant";
+import { isUnnamedRecord } from "@/lib/elephantNames";
 
 const seedElephants = seedData as ElephantRecord[];
 
@@ -43,6 +44,7 @@ function filterLocal(
     if (params.locationId && record.locationId !== params.locationId) return false;
     if (params.locationName && record.locationName !== params.locationName) return false;
     if (params.category && record.category !== params.category) return false;
+    if (params.namedOnly && isUnnamedRecord(record)) return false;
     if (!q) return true;
     const haystack = [
       record.name,
@@ -103,11 +105,7 @@ export async function searchElephants(
   params: ElephantSearchParams
 ): Promise<ElephantSearchResult> {
   if (isMysqlConfigured()) {
-    try {
-      return await searchElephantsMysql(params);
-    } catch {
-      return searchLocal(params);
-    }
+    return await searchElephantsMysql(params);
   }
   return searchLocal(params);
 }

@@ -18,9 +18,11 @@ export async function GET(request: NextRequest) {
     sex: (searchParams.get("sex") as ElephantSex) ?? undefined,
     subspecies: (searchParams.get("subspecies") as ElephantSubspecies) ?? undefined,
     locationId: searchParams.get("locationId") ?? undefined,
-    locationName: searchParams.get("locationName") ?? undefined,
+    locationName:
+      searchParams.get("locationName") ?? searchParams.get("location") ?? undefined,
     category: (searchParams.get("category") as ElephantCategory) ?? undefined,
     sort: (searchParams.get("sort") as ElephantSort) ?? undefined,
+    namedOnly: searchParams.get("includeUnnamed") !== "true",
     page: Number(searchParams.get("page") ?? 1),
     perPage: Number(searchParams.get("perPage") ?? 24),
   });

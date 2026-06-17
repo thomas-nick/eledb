@@ -61,6 +61,8 @@ export interface ElephantSearchParams {
   locationName?: string;
   category?: ElephantCategory;
   sort?: ElephantSort;
+  /** When true, hide elephant.se placeholders with no real name */
+  namedOnly?: boolean;
   page?: number;
   perPage?: number;
 }

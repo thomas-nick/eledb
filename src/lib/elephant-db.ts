@@ -265,6 +265,39 @@ export async function migrateElephantSchema(): Promise<void> {
       // index may already exist
     }
   }
+
+  await migrateFulltextSearchIndex(db);
+}
+
+async function migrateFulltextSearchIndex(db: Pool) {
+  const expectedColumns =
+    "name, location_name, country, father_name, mother_name, chip_id";
+  try {
+    const [indexes] = await db.query<RowDataPacket[]>(
+      `SHOW INDEX FROM elephants WHERE Key_name = 'idx_search'`
+    );
+    const indexedColumns = indexes
+      .sort((a, b) => Number(a.Seq_in_index) - Number(b.Seq_in_index))
+      .map((r) => String(r.Column_name))
+      .join(", ");
+    if (indexedColumns === expectedColumns) return;
+
+    if (indexes.length > 0) {
+      await db.query("ALTER TABLE elephants DROP INDEX idx_search");
+      console.log("Dropped outdated FULLTEXT index idx_search");
+    }
+  } catch {
+    // no index yet
+  }
+
+  try {
+    await db.query(
+      `ALTER TABLE elephants ADD FULLTEXT idx_search (${expectedColumns})`
+    );
+    console.log("Created FULLTEXT index idx_search");
+  } catch (err) {
+    console.warn("FULLTEXT index migration skipped:", err);
+  }
 }
 
 export async function upsertElephants(records: ElephantRecord[]): Promise<void> {
@@ -353,14 +386,16 @@ function buildFilters(params: ElephantSearchParams): FilterClause {
   if (params.locationId) {
     parts.push("location_id = ?");
     values.push(params.locationId);
-  }
-  if (params.locationName) {
+  } else if (params.locationName) {
     parts.push("location_name = ?");
     values.push(params.locationName);
   }
   if (params.category) {
     parts.push("category = ?");
     values.push(params.category);
+  }
+  if (params.namedOnly) {
+    parts.push("name != 'unknown' AND TRIM(name) != '' AND LOWER(TRIM(name)) != 'unnamed'");
   }
 
   return {
@@ -373,19 +408,8 @@ function buildSearchClause(q?: string): FilterClause {
   const term = q?.trim();
   if (!term) return { sql: "", params: [] };
 
-  if (term.length >= 3) {
-    return {
-      sql: ` AND (
-        MATCH(name, location_name, country, father_name, mother_name, chip_id) AGAINST (? IN NATURAL LANGUAGE MODE)
-        OR name LIKE ?
-        OR location_name LIKE ?
-        OR chip_id LIKE ?
-      )`,
-      params: [term, `%${term}%`, `%${term}%`, `%${term}%`],
-    };
-  }
-
   const like = `%${term}%`;
+  // LIKE works reliably across all migrations; FULLTEXT requires idx_search with chip_id
   return {
     sql: ` AND (
       name LIKE ? OR location_name LIKE ? OR country LIKE ?
@@ -530,6 +554,7 @@ interface LocationRow extends RowDataPacket {
   category: string;
   elephant_count: number;
   living_count: number;
+  named_count: number;
 }
 
 function rowToLocation(row: LocationRow): LocationSummary {
@@ -542,6 +567,7 @@ function rowToLocation(row: LocationRow): LocationSummary {
     category: row.category as LocationSummary["category"],
     elephantCount: Number(row.elephant_count),
     livingCount: Number(row.living_count),
+    namedCount: Number(row.named_count),
     sanctuaryIds: getSanctuaryIdsForLocation(row.location_id),
   };
 }
@@ -583,7 +609,8 @@ export async function listLocationsMysql(options: {
   const [rows] = await db.query<LocationRow[]>(
     `SELECT location_id, location_name, country, category,
             COUNT(*) AS elephant_count,
-            SUM(status = 'living') AS living_count
+            SUM(status = 'living') AS living_count,
+            SUM(name != 'unknown' AND TRIM(name) != '' AND LOWER(TRIM(name)) != 'unnamed') AS named_count
      FROM elephants
      WHERE ${where}
      GROUP BY location_id, location_name, country, category
@@ -604,7 +631,8 @@ export async function getLocationMysql(locationId: string): Promise<LocationSumm
   const [rows] = await db.query<LocationRow[]>(
     `SELECT location_id, location_name, country, category,
             COUNT(*) AS elephant_count,
-            SUM(status = 'living') AS living_count
+            SUM(status = 'living') AS living_count,
+            SUM(name != 'unknown' AND TRIM(name) != '' AND LOWER(TRIM(name)) != 'unnamed') AS named_count
      FROM elephants
      WHERE location_id = ?
      GROUP BY location_id, location_name, country, category

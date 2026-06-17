@@ -31,12 +31,14 @@ export default async function CampPage({ params }: CampPageProps) {
   if (!location) notFound();
 
   const linkedSanctuaries = sanctuaries.filter((s) => location.sanctuaryIds.includes(s.id));
+  const unnamedLiving = location.livingCount - location.namedCount;
 
   const { elephants, total } = await searchElephants({
     locationId,
     status: "living",
     sort: "name",
     perPage: 24,
+    namedOnly: true,
   });
 
   return (
@@ -62,15 +64,33 @@ export default async function CampPage({ params }: CampPageProps) {
             <p className="text-sm text-ivory/60 mt-2">elephant.se: {location.name}</p>
           )}
           <div className="flex flex-wrap gap-4 mt-4 text-sm text-ivory/80">
-            <span>{location.elephantCount.toLocaleString()} records</span>
+            <span>{location.namedCount.toLocaleString()} named</span>
             <span>·</span>
             <span>{location.livingCount.toLocaleString()} living</span>
+            <span>·</span>
+            <span>{location.elephantCount.toLocaleString()} total records</span>
           </div>
         </Container>
       </section>
 
       <section className="py-12 md:py-16">
         <Container size="wide">
+          {unnamedLiving > 0 && (
+            <Card className="p-5 mb-8 bg-amber-50 border-amber-200">
+              <p className="text-sm text-muted leading-relaxed">
+                <strong className="text-forest">{unnamedLiving} living elephants</strong> at this
+                camp have no name on elephant.se — placeholders only. Showing{" "}
+                <strong className="text-forest">{total} named</strong> below.{" "}
+                <Link
+                  href={`/elephants?locationId=${locationId}&locationName=${encodeURIComponent(location.name)}&status=living&includeUnnamed=true`}
+                  className="text-clay hover:text-foreground font-medium"
+                >
+                  Show all {location.livingCount} including unnamed →
+                </Link>
+              </p>
+            </Card>
+          )}
+
           {linkedSanctuaries.length > 0 && (
             <div className="mb-10 space-y-4">
               <h2 className="font-serif text-2xl font-bold text-forest">Curated sanctuary profile</h2>

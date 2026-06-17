@@ -5,6 +5,7 @@ import {
   listLocationsMysql,
 } from "@/lib/elephant-db";
 import { normalizeLocationDisplayName } from "@/lib/locationDisplay";
+import { isUnnamedRecord } from "@/lib/elephantNames";
 import { getSanctuaryIdsForLocation } from "@/data/elephantSeLocations";
 import type { ElephantRecord } from "@/types/elephant";
 import type { LocationListResult, LocationSummary } from "@/types/location";
@@ -32,6 +33,7 @@ function buildLocalLocations(
     if (existing) {
       existing.elephantCount++;
       if (e.status === "living") existing.livingCount++;
+      if (!isUnnamedRecord(e)) existing.namedCount++;
     } else {
       groups.set(e.locationId, {
         id: e.locationId,
@@ -41,6 +43,7 @@ function buildLocalLocations(
         category: e.category,
         elephantCount: 1,
         livingCount: e.status === "living" ? 1 : 0,
+        namedCount: isUnnamedRecord(e) ? 0 : 1,
         sanctuaryIds: getSanctuaryIdsForLocation(e.locationId),
       });
     }
@@ -94,6 +97,7 @@ export async function getLocation(locationId: string): Promise<LocationSummary |
     category: first.category,
     elephantCount: match.length,
     livingCount: match.filter((e) => e.status === "living").length,
+    namedCount: match.filter((e) => !isUnnamedRecord(e)).length,
     sanctuaryIds: getSanctuaryIdsForLocation(locationId),
   };
 }

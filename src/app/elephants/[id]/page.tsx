@@ -5,6 +5,7 @@ import { Container } from "@/components/ui/Container";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { ElephantAttribution } from "@/components/elephants/ElephantAttribution";
+import { displayElephantName, isUnnamedRecord } from "@/lib/elephantNames";
 import { getElephantById, getHerdMates, getOffspring } from "@/lib/elephants";
 import { getSanctuaryIdsForLocation } from "@/data/elephantSeLocations";
 import { sanctuaries } from "@/data/sanctuaries";
@@ -31,9 +32,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { id } = await params;
   const elephant = await getElephantById(id);
   if (!elephant) return { title: "Elephant not found" };
+  const title = displayElephantName(elephant);
   return {
-    title: `${elephant.name} — ${elephant.locationName}`,
-    description: `Asian elephant record for ${elephant.name} at ${elephant.locationName}, ${elephant.country}.`,
+    title: `${title} — ${elephant.locationName}`,
+    description: `Asian elephant record for ${title} at ${elephant.locationName}, ${elephant.country}.`,
   };
 }
 
@@ -53,6 +55,7 @@ export default async function ElephantDetailPage({ params }: PageProps) {
   const linkedSanctuaries = sanctuaries.filter((s) => linkedSanctuaryIds.includes(s.id));
 
   const photo = elephant.photos?.[0];
+  const unnamed = isUnnamedRecord(elephant);
   const hasIdentification =
     elephant.chipId ||
     elephant.localId ||
@@ -68,7 +71,9 @@ export default async function ElephantDetailPage({ params }: PageProps) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
             <div className="md:col-span-2">
               <div className="flex flex-wrap items-start gap-3 mb-2">
-                <h1 className="font-serif text-3xl md:text-4xl font-bold">{elephant.name}</h1>
+                <h1 className="font-serif text-3xl md:text-4xl font-bold">
+                  {displayElephantName(elephant)}
+                </h1>
                 <Badge
                   variant={elephant.status === "living" ? "success" : "danger"}
                   className="capitalize mt-2"
@@ -106,6 +111,25 @@ export default async function ElephantDetailPage({ params }: PageProps) {
 
       <section className="py-12 md:py-16">
         <Container size="narrow">
+          {unnamed && (
+            <Card className="p-5 mb-8 bg-amber-50 border-amber-200">
+              <h2 className="font-serif text-lg font-bold text-forest mb-2">
+                No individual profile yet
+              </h2>
+              <p className="text-sm text-muted leading-relaxed mb-3">
+                elephant.se lists this elephant at {elephant.locationName} without a name or
+                details — a common placeholder for camps that haven&apos;t registered individuals
+                yet. Mahout and camp contributions coming soon to help fill these in.
+              </p>
+              <p className="text-xs text-muted">
+                Know this elephant?{" "}
+                <a href={elephant.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-clay hover:text-forest">
+                  View on elephant.se ↗
+                </a>
+              </p>
+            </Card>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             {hasIdentification && (
               <Card className="p-5">

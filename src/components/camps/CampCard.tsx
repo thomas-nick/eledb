@@ -23,9 +23,9 @@ export function CampCard({ location }: CampCardProps) {
         </div>
         <p className="text-sm text-muted mb-3">{location.country}</p>
         <div className="flex flex-wrap gap-2 text-xs text-muted">
-          <span>{location.livingCount} living</span>
+          <span>{location.namedCount} named</span>
           <span>·</span>
-          <span>{location.elephantCount} total</span>
+          <span>{location.livingCount} living</span>
           <span>·</span>
           <span className="capitalize">{location.category}</span>
         </div>

@@ -8,6 +8,7 @@ export interface LocationSummary {
   category: ElephantCategory;
   elephantCount: number;
   livingCount: number;
+  namedCount: number;
   sanctuaryIds: string[];
 }
 
