@@ -6,7 +6,9 @@ import {
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { externalRatingVariants } from "@/data/sanctuarySources";
+import { getLocationIdForSanctuary } from "@/data/elephantSeLocations";
 import { elephantSeFacilityUrl } from "@/lib/elephantSe";
+import Link from "next/link";
 
 interface SanctuaryCardProps {
   sanctuary: Sanctuary;
@@ -24,6 +26,7 @@ const welfareLabels: { key: keyof Sanctuary["welfare"]; label: string }[] = [
 
 export function SanctuaryCard({ sanctuary, onSelect }: SanctuaryCardProps) {
   const elephantSeUrl = elephantSeFacilityUrl(sanctuary);
+  const locationId = getLocationIdForSanctuary(sanctuary.id);
 
   return (
     <Card hover className="cursor-pointer" onClick={() => onSelect?.(sanctuary)}>
@@ -86,21 +89,32 @@ export function SanctuaryCard({ sanctuary, onSelect }: SanctuaryCardProps) {
         </div>
       </details>
 
-      <div className="flex items-center justify-between gap-3 mt-4 pt-4 border-t border-border text-xs text-muted">
+      <div className="flex items-center justify-between gap-3 mt-4 pt-4 border-t border-border text-xs text-muted flex-wrap">
         <div className="flex items-center gap-3">
           <span>Capacity: {sanctuary.visitorCapacity}</span>
           <span>&middot;</span>
           <span>Price: {sanctuary.priceRange}</span>
         </div>
-        <a
-          href={elephantSeUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          className="text-clay hover:text-forest font-medium whitespace-nowrap transition-colors"
-        >
-          elephant.se ↗
-        </a>
+        <div className="flex items-center gap-3">
+          {locationId && (
+            <Link
+              href={`/camps/${locationId}`}
+              onClick={(e) => e.stopPropagation()}
+              className="text-clay hover:text-forest font-medium whitespace-nowrap transition-colors"
+            >
+              Elephants →
+            </Link>
+          )}
+          <a
+            href={elephantSeUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="text-clay hover:text-forest font-medium whitespace-nowrap transition-colors"
+          >
+            elephant.se ↗
+          </a>
+        </div>
       </div>
     </Card>
   );

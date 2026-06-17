@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 
 const navLinks = [
   { href: "/sanctuaries", label: "Sanctuaries" },
+  { href: "/camps", label: "Camps" },
   { href: "/elephants", label: "Elephants" },
   { href: "/corridors", label: "Corridors" },
   { href: "/coexistence", label: "Range Map" },

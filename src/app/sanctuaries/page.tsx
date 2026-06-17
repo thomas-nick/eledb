@@ -246,21 +246,28 @@ export default function SanctuariesPage() {
                     Search on elephant.se &rarr;
                   </a>
 
-                  {getLocationIdForSanctuary(selected.id) && (
+                  {getLocationIdForSanctuary(selected.id) ? (
                     <Link
-                      href={`/elephants?locationId=${getLocationIdForSanctuary(selected.id)}&locationName=${encodeURIComponent(selected.name)}`}
-                      className="text-sm text-clay hover:text-forest transition-colors mb-4 inline-block"
+                      href={`/camps/${getLocationIdForSanctuary(selected.id)}`}
+                      className="text-sm text-clay hover:text-forest transition-colors mb-4 inline-block mr-4"
                     >
-                      Named elephants at this camp &rarr;
+                      Camp profile &amp; named elephants &rarr;
                     </Link>
-                  )}
-
-                  {!getLocationIdForSanctuary(selected.id) && (
+                  ) : (
                     <Link
                       href={`/elephants?q=${encodeURIComponent(selected.name)}&country=${encodeURIComponent(selected.country)}`}
                       className="text-sm text-clay hover:text-forest transition-colors mb-4 inline-block"
                     >
                       Search elephants here &rarr;
+                    </Link>
+                  )}
+
+                  {getLocationIdForSanctuary(selected.id) && (
+                    <Link
+                      href={`/elephants?locationId=${getLocationIdForSanctuary(selected.id)}&locationName=${encodeURIComponent(selected.name)}`}
+                      className="text-sm text-clay hover:text-forest transition-colors mb-4 inline-block"
+                    >
+                      Filter elephant list &rarr;
                     </Link>
                   )}
 

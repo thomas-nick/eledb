@@ -219,12 +219,20 @@ export default async function ElephantDetailPage({ params }: PageProps) {
                 {elephant.country} · {elephant.category}
               </p>
               {elephant.locationId && (
-                <Link
-                  href={`/elephants?locationId=${elephant.locationId}&locationName=${encodeURIComponent(elephant.locationName)}`}
-                  className="text-sm text-clay hover:text-forest font-medium"
-                >
-                  View all elephants at this facility →
-                </Link>
+                <>
+                  <Link
+                    href={`/camps/${elephant.locationId}`}
+                    className="text-sm text-clay hover:text-forest font-medium block mb-2"
+                  >
+                    Camp profile →
+                  </Link>
+                  <Link
+                    href={`/elephants?locationId=${elephant.locationId}&locationName=${encodeURIComponent(elephant.locationName)}`}
+                    className="text-sm text-clay hover:text-forest font-medium"
+                  >
+                    All elephants at this facility →
+                  </Link>
+                </>
               )}
             </Card>
           </div>
@@ -296,7 +304,10 @@ export default async function ElephantDetailPage({ params }: PageProps) {
               <ul className="space-y-2">
                 {linkedSanctuaries.map((s) => (
                   <li key={s.id}>
-                    <Link href="/sanctuaries" className="text-sm font-medium text-forest hover:text-clay">
+                    <Link
+                      href={`/camps/${elephant.locationId}`}
+                      className="text-sm font-medium text-forest hover:text-clay"
+                    >
                       {s.name} →
                     </Link>
                   </li>

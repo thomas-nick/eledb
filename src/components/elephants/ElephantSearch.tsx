@@ -13,6 +13,7 @@ import type {
   ElephantStatus,
   ElephantSubspecies,
 } from "@/types/elephant";
+import type { LocationSummary } from "@/types/location";
 import { cn } from "@/lib/utils";
 
 const statusOptions: { value: ElephantStatus | "all"; label: string }[] = [
@@ -53,6 +54,7 @@ export function ElephantSearch() {
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
   const [result, setResult] = useState<ElephantSearchResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const [campChips, setCampChips] = useState<LocationSummary[]>([]);
 
   const country = searchParams.get("country") ?? "";
   const status = (searchParams.get("status") as ElephantStatus | null) ?? "";
@@ -105,6 +107,22 @@ export function ElephantSearch() {
 
     return () => controller.abort();
   }, [searchParams, country, status, sex, subspecies, category, sort, page, locationId, locationName]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const params = new URLSearchParams();
+    params.set("category", "camp");
+    params.set("limit", "12");
+    if (country) params.set("country", country);
+    else params.set("country", "Thailand");
+
+    fetch(`/api/locations?${params}`, { signal: controller.signal })
+      .then((r) => r.json())
+      .then((data: { locations: LocationSummary[] }) => setCampChips(data.locations ?? []))
+      .catch(() => setCampChips([]));
+
+    return () => controller.abort();
+  }, [country]);
 
   useEffect(() => {
     const q = query.trim();
@@ -162,9 +180,18 @@ export function ElephantSearch() {
           </div>
 
           {(locationName || locationId) && (
-            <div className="mb-4 flex items-center gap-2 text-sm">
+            <div className="mb-4 flex items-center gap-2 text-sm flex-wrap">
               <span className="text-muted">Filtered to facility:</span>
-              <span className="font-medium text-forest">{locationName || `Location #${locationId}`}</span>
+              {locationId ? (
+                <a
+                  href={`/camps/${locationId}`}
+                  className="font-medium text-forest hover:text-clay"
+                >
+                  {locationName || `Location #${locationId}`}
+                </a>
+              ) : (
+                <span className="font-medium text-forest">{locationName}</span>
+              )}
               <button
                 type="button"
                 onClick={() => updateParams({ locationId: null, locationName: null })}
@@ -173,6 +200,36 @@ export function ElephantSearch() {
                 Clear
               </button>
             </div>
+          )}
+
+          {campChips.length > 0 && !locationId && (
+            <FilterRow label={country ? `Top camps in ${country}` : "Top camps in Thailand"}>
+              {campChips.map((loc) => (
+                <FilterChip
+                  key={loc.id}
+                  active={locationId === loc.id}
+                  onClick={() =>
+                    updateParams({
+                      locationId: loc.id,
+                      locationName: loc.name,
+                      category: "camp",
+                    })
+                  }
+                >
+                  {loc.displayName}{" "}
+                  <span className="opacity-60">{loc.livingCount}</span>
+                  {loc.sanctuaryIds.length > 0 && (
+                    <span className="ml-0.5 text-[10px] opacity-80">★</span>
+                  )}
+                </FilterChip>
+              ))}
+              <a
+                href={`/camps?country=${encodeURIComponent(country || "Thailand")}`}
+                className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium text-clay hover:text-forest border border-dashed border-border"
+              >
+                All camps →
+              </a>
+            </FilterRow>
           )}
 
           <div className="space-y-4">

@@ -5,6 +5,9 @@ import type {
   ElephantSearchResult,
   ElephantSort,
 } from "@/types/elephant";
+import type { LocationListResult, LocationSummary } from "@/types/location";
+import { normalizeLocationDisplayName } from "@/lib/locationDisplay";
+import { getSanctuaryIdsForLocation } from "@/data/elephantSeLocations";
 
 export const ELEPHANTS_SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS elephants (
@@ -307,7 +310,22 @@ export async function upsertElephants(records: ElephantRecord[]): Promise<void> 
       synced_at = VALUES(synced_at)
   `;
   const rows = records.map(recordToRow);
-  await db.query(sql, [rows]);
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      await db.query(sql, [rows]);
+      return;
+    } catch (err) {
+      const retryable =
+        err instanceof Error &&
+        ("code" in err
+          ? err.code === "ETIMEDOUT" ||
+            err.code === "ECONNRESET" ||
+            err.code === "PROTOCOL_CONNECTION_LOST"
+          : false);
+      if (!retryable || attempt === 3) throw err;
+      await new Promise((r) => setTimeout(r, 2000 * attempt));
+    }
+  }
 }
 
 type FilterClause = { sql: string; params: (string | number)[] };
@@ -503,4 +521,95 @@ export async function countElephantsMysql(): Promise<number> {
   const db = getMysqlPool();
   const [rows] = await db.query<RowDataPacket[]>("SELECT COUNT(*) AS total FROM elephants");
   return Number(rows[0]?.total ?? 0);
+}
+
+interface LocationRow extends RowDataPacket {
+  location_id: string;
+  location_name: string;
+  country: string;
+  category: string;
+  elephant_count: number;
+  living_count: number;
+}
+
+function rowToLocation(row: LocationRow): LocationSummary {
+  const name = row.location_name;
+  return {
+    id: row.location_id,
+    name,
+    displayName: normalizeLocationDisplayName(name),
+    country: row.country,
+    category: row.category as LocationSummary["category"],
+    elephantCount: Number(row.elephant_count),
+    livingCount: Number(row.living_count),
+    sanctuaryIds: getSanctuaryIdsForLocation(row.location_id),
+  };
+}
+
+export async function listLocationsMysql(options: {
+  country?: string;
+  category?: string;
+  q?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<LocationListResult> {
+  const db = getMysqlPool();
+  const limit = options.limit ?? 30;
+  const offset = options.offset ?? 0;
+  const parts: string[] = ["location_id IS NOT NULL", "location_id != ''"];
+  const params: (string | number)[] = [];
+
+  if (options.country) {
+    parts.push("country = ?");
+    params.push(options.country);
+  }
+  if (options.category) {
+    parts.push("category = ?");
+    params.push(options.category);
+  }
+  if (options.q?.trim()) {
+    parts.push("location_name LIKE ?");
+    params.push(`%${options.q.trim()}%`);
+  }
+
+  const where = parts.join(" AND ");
+
+  const [countRows] = await db.query<RowDataPacket[]>(
+    `SELECT COUNT(DISTINCT location_id) AS total FROM elephants WHERE ${where}`,
+    params
+  );
+  const total = Number(countRows[0]?.total ?? 0);
+
+  const [rows] = await db.query<LocationRow[]>(
+    `SELECT location_id, location_name, country, category,
+            COUNT(*) AS elephant_count,
+            SUM(status = 'living') AS living_count
+     FROM elephants
+     WHERE ${where}
+     GROUP BY location_id, location_name, country, category
+     ORDER BY elephant_count DESC
+     LIMIT ? OFFSET ?`,
+    [...params, limit, offset]
+  );
+
+  return {
+    locations: rows.map(rowToLocation),
+    total,
+    source: "mysql",
+  };
+}
+
+export async function getLocationMysql(locationId: string): Promise<LocationSummary | null> {
+  const db = getMysqlPool();
+  const [rows] = await db.query<LocationRow[]>(
+    `SELECT location_id, location_name, country, category,
+            COUNT(*) AS elephant_count,
+            SUM(status = 'living') AS living_count
+     FROM elephants
+     WHERE location_id = ?
+     GROUP BY location_id, location_name, country, category
+     LIMIT 1`,
+    [locationId]
+  );
+  return rows[0] ? rowToLocation(rows[0]) : null;
 }
