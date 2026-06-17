@@ -1,4 +1,5 @@
 import type { ElephantPhoto as ElephantPhotoType } from "@/types/elephant";
+import { resolveElephantPhotoUrl } from "@/lib/elephantSe";
 
 interface ElephantPhotoProps {
   photo?: ElephantPhotoType;
@@ -22,7 +23,7 @@ export function ElephantPhoto({
       <figure className={className}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={photo.url}
+          src={resolveElephantPhotoUrl(photo.url)}
           alt={photo.credit ?? alt}
           className="w-full h-full object-cover"
           sizes={sizes}

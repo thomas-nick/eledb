@@ -4,11 +4,19 @@ import { notFound } from "next/navigation";
 import { Container } from "@/components/ui/Container";
 import { ElephantAttribution } from "@/components/elephants/ElephantAttribution";
 import { ElephantDetailPanels } from "@/components/elephants/ElephantDetailPanels";
+import { ElephantEnrichmentStory } from "@/components/elephants/ElephantEnrichmentStory";
 import { ElephantHerdSection } from "@/components/elephants/ElephantHerdSection";
 import { ElephantLineageSection } from "@/components/elephants/ElephantLineageSection";
+import { ElephantPhotoGallery } from "@/components/elephants/ElephantPhotoGallery";
 import { ElephantProfileHero } from "@/components/elephants/ElephantProfileHero";
+import { ElephantQuickStats } from "@/components/elephants/ElephantQuickStats";
 import { ElephantUnnamedBanner } from "@/components/elephants/ElephantUnnamedBanner";
 import { displayElephantName, isUnnamedRecord } from "@/lib/elephantNames";
+import {
+  getElephantEnrichment,
+  mergeProfilePhotos,
+} from "@/lib/elephantEnrichments";
+import { resolveElephantPhotoUrl } from "@/lib/elephantSe";
 import { getElephantById, getHerdMates, getOffspring } from "@/lib/elephants";
 import { getSanctuaryIdsForLocation } from "@/data/elephantSeLocations";
 import { sanctuaries } from "@/data/sanctuaries";
@@ -21,9 +29,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { id } = await params;
   const elephant = await getElephantById(id);
   if (!elephant) return { title: "Elephant not found" };
+  const enrichment = await getElephantEnrichment(id);
   const title = displayElephantName(elephant);
-  const description = `Asian elephant record for ${title} at ${elephant.locationName}, ${elephant.country}.`;
-  const photo = elephant.photos?.[0];
+  const description =
+    enrichment?.teaser ??
+    `Asian elephant record for ${title} at ${elephant.locationName}, ${elephant.country}.`;
+  const photos = mergeProfilePhotos(elephant.photos, enrichment);
+  const photo = photos[0];
 
   return {
     title: `${title} — ${elephant.locationName}`,
@@ -33,7 +45,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description,
       type: "profile",
       ...(photo && {
-        images: [{ url: photo.url, alt: photo.credit ?? title }],
+        images: [
+          {
+            url: photo.url.startsWith("http") ? photo.url : resolveElephantPhotoUrl(photo.url),
+            alt: photo.credit ?? title,
+          },
+        ],
       }),
     },
   };
@@ -44,11 +61,12 @@ export default async function ElephantDetailPage({ params }: PageProps) {
   const elephant = await getElephantById(id);
   if (!elephant) notFound();
 
-  const [offspring, herdMates, father, mother] = await Promise.all([
+  const [offspring, herdMates, father, mother, enrichment] = await Promise.all([
     getOffspring(id),
     elephant.locationId ? getHerdMates(elephant.locationId, id) : Promise.resolve([]),
     elephant.fatherId ? getElephantById(elephant.fatherId) : Promise.resolve(null),
     elephant.motherId ? getElephantById(elephant.motherId) : Promise.resolve(null),
+    getElephantEnrichment(id),
   ]);
 
   const linkedSanctuaryIds = elephant.locationId
@@ -56,14 +74,34 @@ export default async function ElephantDetailPage({ params }: PageProps) {
     : [];
   const linkedSanctuaries = sanctuaries.filter((s) => linkedSanctuaryIds.includes(s.id));
   const unnamed = isUnnamedRecord(elephant);
+  const displayName = displayElephantName(elephant);
+  const namedHerdMateCount = herdMates.filter((m) => !isUnnamedRecord(m)).length;
+  const photos = mergeProfilePhotos(elephant.photos, enrichment);
 
   return (
     <>
-      <ElephantProfileHero elephant={elephant} />
+      <ElephantProfileHero elephant={elephant} photos={photos} />
 
-      <section className="py-12 md:py-16">
+      <div className="relative z-20 -mt-24 md:-mt-28">
         <Container size="wide">
-          {unnamed && <ElephantUnnamedBanner elephant={elephant} />}
+          <ElephantQuickStats
+            elephant={elephant}
+            offspringCount={offspring.length}
+            herdMateCount={herdMates.length}
+            namedHerdMateCount={namedHerdMateCount}
+          />
+        </Container>
+      </div>
+
+      <section className="py-10 md:py-14">
+        <Container size="wide">
+          {photos.length > 0 && (
+            <ElephantPhotoGallery photos={photos} elephantName={displayName} />
+          )}
+
+          {enrichment && <ElephantEnrichmentStory enrichment={enrichment} />}
+
+          {unnamed && !enrichment && <ElephantUnnamedBanner elephant={elephant} />}
 
           <ElephantLineageSection
             elephant={elephant}

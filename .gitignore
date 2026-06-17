@@ -41,3 +41,4 @@ yarn-error.log*
 *.tsbuildinfo
 scripts/sync-elephant-se/.checkpoint.json
 scripts/sync-elephant-se/sync-all.log
+scripts/sanctuary-import/.last-import-review.json

@@ -1,5 +1,12 @@
 export const ELEPHANT_SE_BASE = "https://www.elephant.se";
 
+/** Resolve relative elephant.se image paths to absolute URLs */
+export function resolveElephantPhotoUrl(url: string): string {
+  if (/^https?:\/\//i.test(url)) return url;
+  const path = url.startsWith("/") ? url : `/${url}`;
+  return `${ELEPHANT_SE_BASE}${path}`;
+}
+
 /** Optimized search terms for elephant.se's location/individual index by country */
 const countrySearchQueries: Record<string, string> = {
   Thailand: "Thailand",

@@ -9,13 +9,15 @@ import {
 } from "@/lib/elephantDisplay";
 import { Badge } from "@/components/ui/Badge";
 import { ElephantPhoto } from "@/components/elephants/ElephantPhoto";
+import { resolveElephantPhotoUrl } from "@/lib/elephantSe";
 
 interface ElephantProfileHeroProps {
   elephant: ElephantRecord;
+  photos?: ElephantRecord["photos"];
 }
 
-export function ElephantProfileHero({ elephant }: ElephantProfileHeroProps) {
-  const photo = elephant.photos?.[0];
+export function ElephantProfileHero({ elephant, photos: photosOverride }: ElephantProfileHeroProps) {
+  const photo = photosOverride?.[0] ?? elephant.photos?.[0];
   const unnamed = isUnnamedRecord(elephant);
   const displayName = displayElephantName(elephant);
   const sub = elephant.subspecies ?? "unknown";
@@ -27,7 +29,7 @@ export function ElephantProfileHero({ elephant }: ElephantProfileHeroProps) {
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={photo.url}
+              src={photo.url.startsWith("http") ? photo.url : resolveElephantPhotoUrl(photo.url)}
               alt={photo.credit ?? displayName}
               className="w-full h-full object-cover object-[center_30%]"
               sizes="100vw"
@@ -82,19 +84,19 @@ export function ElephantProfileHero({ elephant }: ElephantProfileHeroProps) {
           {subspeciesLabel[sub]} · <span className="italic">{subspeciesScientific[sub]}</span>
         </p>
 
-        <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="mt-5">
           {elephant.locationId ? (
             <Link
               href={`/camps/${elephant.locationId}`}
-              className="inline-flex items-center gap-2 text-ivory font-medium hover:text-clay-light transition-colors"
+              className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-1 text-ivory font-medium hover:text-clay-light transition-colors"
             >
               <span className="text-ivory/60 text-sm">At</span>
-              <span className="font-serif text-xl md:text-2xl">{elephant.locationName}</span>
-              <span className="text-ivory/50">·</span>
-              <span className="text-ivory/80">{elephant.country}</span>
+              <span className="font-serif text-xl md:text-2xl leading-snug">{elephant.locationName}</span>
+              <span className="text-ivory/50 hidden sm:inline">·</span>
+              <span className="text-ivory/80 text-base">{elephant.country}</span>
             </Link>
           ) : (
-            <p className="font-serif text-xl md:text-2xl">
+            <p className="font-serif text-xl md:text-2xl leading-snug">
               {elephant.locationName}
               <span className="text-ivory/60 text-base font-sans ml-2">{elephant.country}</span>
             </p>
@@ -105,6 +107,9 @@ export function ElephantProfileHero({ elephant }: ElephantProfileHeroProps) {
           <p className="mt-4 text-xs text-ivory/50">Photo: {photo.credit}</p>
         )}
       </div>
+
+      {/* Reserve space so overlapping stats card does not cover location line */}
+      <div className="relative z-10 h-24 md:h-28 shrink-0" aria-hidden />
     </section>
   );
 }

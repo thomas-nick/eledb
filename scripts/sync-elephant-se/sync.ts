@@ -19,6 +19,7 @@ import {
   migrateElephantSchema,
   upsertElephants,
 } from "../../src/lib/elephant-db";
+import { migrateEnrichmentSchema } from "../../src/lib/elephant-enrichment-db";
 import type { ElephantRecord } from "../../src/types/elephant";
 import { runWorldwideCrawl } from "./crawl";
 import { discoverThailandElephantIds, fetchText } from "./discover";
@@ -213,7 +214,8 @@ async function runInit() {
     throw new Error("Set MYSQL_HOST, MYSQL_USER, MYSQL_DATABASE (and password) in .env.local");
   }
   await initElephantSchema();
-  console.log("MySQL elephants table ready");
+  await migrateEnrichmentSchema();
+  console.log("MySQL elephants + enrichments tables ready");
 }
 
 async function runMigrate() {
@@ -221,6 +223,7 @@ async function runMigrate() {
     throw new Error("Set MYSQL_HOST, MYSQL_USER, MYSQL_DATABASE (and password) in .env.local");
   }
   await migrateElephantSchema();
+  await migrateEnrichmentSchema();
   console.log("MySQL schema migration complete");
 }
 

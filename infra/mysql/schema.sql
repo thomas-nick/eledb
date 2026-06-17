@@ -43,3 +43,27 @@ CREATE TABLE IF NOT EXISTS elephants (
   INDEX idx_location_name (location_name(191)),
   FULLTEXT idx_search (name, location_name, country, father_name, mother_name, chip_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS elephant_enrichments (
+  id VARCHAR(64) NOT NULL PRIMARY KEY,
+  elephant_id VARCHAR(32) NULL,
+  source VARCHAR(64) NOT NULL,
+  source_slug VARCHAR(128) NOT NULL,
+  source_url VARCHAR(512) NOT NULL,
+  display_name VARCHAR(255) NOT NULL,
+  local_name VARCHAR(255) NULL,
+  facility VARCHAR(128) NULL,
+  location_id VARCHAR(32) NULL,
+  sex ENUM('male', 'female', 'unknown') NULL,
+  birth_date VARCHAR(64) NULL,
+  teaser TEXT NULL,
+  story TEXT NULL,
+  rescue_date VARCHAR(64) NULL,
+  rescue_location VARCHAR(255) NULL,
+  herd_friends VARCHAR(255) NULL,
+  photos JSON NULL,
+  synced_at DATETIME NOT NULL,
+  UNIQUE KEY uq_source_slug (source, source_slug),
+  INDEX idx_elephant_id (elephant_id),
+  INDEX idx_location_id (location_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
