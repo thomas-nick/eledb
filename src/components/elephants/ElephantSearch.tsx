@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { ElephantCard } from "@/components/elephants/ElephantCard";
 import { ElephantAttribution } from "@/components/elephants/ElephantAttribution";
@@ -24,8 +24,8 @@ const statusOptions: { value: ElephantStatus | "all"; label: string }[] = [
 
 const sexOptions: { value: ElephantSex | "all"; label: string }[] = [
   { value: "all", label: "All sexes" },
-  { value: "female", label: "♀ Female" },
-  { value: "male", label: "♂ Male" },
+  { value: "female", label: "Female" },
+  { value: "male", label: "Male" },
 ];
 
 const sortOptions: { value: ElephantSort; label: string }[] = [
@@ -46,6 +46,11 @@ const rangeCountries = [
   "Vietnam",
 ];
 
+const suggestedCamps = [
+  { id: "174", name: "Elephant Nature Park", country: "Thailand" },
+  { id: "2627", name: "Wildlife SOS", country: "India" },
+];
+
 export function ElephantSearch() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -55,6 +60,7 @@ export function ElephantSearch() {
   const [result, setResult] = useState<ElephantSearchResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [campChips, setCampChips] = useState<LocationSummary[]>([]);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const country = searchParams.get("country") ?? "";
   const status = (searchParams.get("status") as ElephantStatus | null) ?? "";
@@ -67,6 +73,7 @@ export function ElephantSearch() {
   const locationName =
     searchParams.get("locationName") ?? searchParams.get("location") ?? "";
   const includeUnnamed = searchParams.get("includeUnnamed") === "true";
+  const hasStory = searchParams.get("hasStory") === "true";
 
   const updateParams = useCallback(
     (updates: Record<string, string | null>) => {
@@ -80,6 +87,42 @@ export function ElephantSearch() {
     },
     [pathname, router, searchParams]
   );
+
+  const activeFilters = useMemo(() => {
+    const chips: { key: string; label: string; clear: Record<string, string | null> }[] = [];
+    const q = searchParams.get("q")?.trim();
+    if (q) chips.push({ key: "q", label: `"${q}"`, clear: { q: null } });
+    if (country) chips.push({ key: "country", label: country, clear: { country: null } });
+    if (status) {
+      const label = statusOptions.find((o) => o.value === status)?.label ?? status;
+      chips.push({ key: "status", label, clear: { status: null } });
+    }
+    if (sex) {
+      const label = sexOptions.find((o) => o.value === sex)?.label ?? sex;
+      chips.push({ key: "sex", label, clear: { sex: null } });
+    }
+    if (subspecies) chips.push({ key: "subspecies", label: subspecies, clear: { subspecies: null } });
+    if (category) chips.push({ key: "category", label: category, clear: { category: null } });
+    if (locationId || locationName) {
+      chips.push({
+        key: "location",
+        label: locationName || `Location #${locationId}`,
+        clear: { locationId: null, locationName: null },
+      });
+    }
+    if (!includeUnnamed) {
+      chips.push({ key: "named", label: "Named only", clear: { includeUnnamed: "true" } });
+    }
+    if (hasStory) {
+      chips.push({ key: "hasStory", label: "Has sanctuary story", clear: { hasStory: null } });
+    }
+    return chips;
+  }, [searchParams, country, status, sex, subspecies, category, locationId, locationName, includeUnnamed, hasStory]);
+
+  const clearAllFilters = useCallback(() => {
+    router.replace(pathname, { scroll: false });
+    setQuery("");
+  }, [pathname, router]);
 
   useEffect(() => {
     setQuery(searchParams.get("q") ?? "");
@@ -99,6 +142,7 @@ export function ElephantSearch() {
     if (locationId) params.set("locationId", locationId);
     if (locationName) params.set("locationName", locationName);
     if (includeUnnamed) params.set("includeUnnamed", "true");
+    if (hasStory) params.set("hasStory", "true");
     params.set("page", String(page));
 
     setLoading(true);
@@ -109,7 +153,7 @@ export function ElephantSearch() {
       .finally(() => setLoading(false));
 
     return () => controller.abort();
-  }, [searchParams, country, status, sex, subspecies, category, sort, page, locationId, locationName, includeUnnamed]);
+  }, [searchParams, country, status, sex, subspecies, category, sort, page, locationId, locationName, includeUnnamed, hasStory]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -142,37 +186,55 @@ export function ElephantSearch() {
   const categories = result?.facets.categories ?? [];
   const subspeciesList = result?.facets.subspecies ?? [];
   const totalPages = result ? Math.ceil(result.total / result.perPage) : 0;
+  const activeFilterCount = activeFilters.length;
 
   return (
-    <>
-      <section className="py-16 md:py-24 bg-forest text-ivory">
-        <Container>
-          <p className="text-sm font-semibold uppercase tracking-widest text-clay mb-3">
-            Asian Elephant Database
+    <div className="bg-slate-50 min-h-screen">
+      <section className="bg-white border-b border-slate-200">
+        <Container size="wide" className="py-8 md:py-10">
+          <p className="text-xs font-semibold uppercase tracking-widest text-forest mb-2">
+            Database
           </p>
-          <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold text-ivory leading-tight">
-            Every Named Asian Elephant, Searchable
+          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-slate-900">
+            Asian Elephant Records
           </h1>
-          <p className="mt-4 text-lg text-ivory/80 max-w-2xl leading-relaxed">
-            Individual records from elephant.se — births, transfers, parentage, chip IDs, and camp history across 13 range countries and zoos worldwide.
+          <p className="mt-1.5 text-sm text-slate-500 max-w-2xl">
+            Individual records from elephant.se — births, transfers, parentage, chip IDs, and camp
+            history across 13 range countries and zoos worldwide.
           </p>
         </Container>
       </section>
 
-      <section className="py-10 border-b border-border bg-sage/10">
-        <Container size="wide">
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search name, camp, country, chip ID, parent..."
-              className="flex-1 px-4 py-3 rounded-xl border border-border bg-card text-forest placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-forest/20"
-            />
+      <section className="sticky top-16 z-20 border-b border-slate-200 bg-white/95 backdrop-blur-sm">
+        <Container size="wide" className="py-3">
+          <div className="flex flex-col sm:flex-row gap-2.5">
+            <div className="relative flex-1">
+              <svg
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+                aria-hidden
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search name, camp, country, chip ID, parent..."
+                className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest"
+              />
+            </div>
             <select
               value={sort}
               onChange={(e) => updateParams({ sort: e.target.value })}
-              className="px-4 py-3 rounded-xl border border-border bg-card text-forest text-sm"
+              className="px-3 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm shrink-0 focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest"
             >
               {sortOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -180,207 +242,297 @@ export function ElephantSearch() {
                 </option>
               ))}
             </select>
+            <button
+              type="button"
+              onClick={() => setFiltersOpen((o) => !o)}
+              className={cn(
+                "inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-lg border text-sm font-medium transition-colors shrink-0",
+                filtersOpen || activeFilterCount > 0
+                  ? "border-forest bg-forest text-white"
+                  : "border-slate-300 bg-white text-slate-700 hover:border-slate-400"
+              )}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h18M6 12h12M10 20h4" />
+              </svg>
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full bg-white/20 text-xs">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
           </div>
 
-          {(locationName || locationId) && (
-            <div className="mb-4 flex items-center gap-2 text-sm flex-wrap">
-              <span className="text-muted">Filtered to facility:</span>
-              {locationId ? (
-                <a
-                  href={`/camps/${locationId}`}
-                  className="font-medium text-forest hover:text-clay"
+          {activeFilters.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
+              {activeFilters.map((chip) => (
+                <button
+                  key={chip.key}
+                  type="button"
+                  onClick={() => updateParams(chip.clear)}
+                  className="inline-flex items-center gap-1.5 pl-2.5 pr-2 py-1 rounded-md text-xs font-medium border border-slate-300 bg-white text-slate-600 hover:border-slate-400 hover:text-slate-900 transition-colors"
                 >
-                  {locationName || `Location #${locationId}`}
-                </a>
-              ) : (
-                <span className="font-medium text-forest">{locationName}</span>
-              )}
+                  {chip.label}
+                  <span className="text-slate-400" aria-hidden>
+                    ×
+                  </span>
+                </button>
+              ))}
               <button
                 type="button"
-                onClick={() => updateParams({ locationId: null, locationName: null })}
-                className="text-clay hover:text-forest ml-2"
+                onClick={clearAllFilters}
+                className="text-xs text-forest hover:text-forest-light font-medium ml-1"
               >
-                Clear
+                Clear all
               </button>
             </div>
           )}
-
-          {campChips.length > 0 && !locationId && (
-            <FilterRow label={country ? `Top camps in ${country}` : "Top camps in Thailand"}>
-              {campChips.map((loc) => (
-                <FilterChip
-                  key={loc.id}
-                  active={locationId === loc.id}
-                  onClick={() =>
-                    updateParams({
-                      locationId: loc.id,
-                      locationName: loc.name,
-                      category: "camp",
-                    })
-                  }
-                >
-                  {loc.displayName}{" "}
-                  <span className="opacity-60">{loc.livingCount}</span>
-                  {loc.sanctuaryIds.length > 0 && (
-                    <span className="ml-0.5 text-[10px] opacity-80">★</span>
-                  )}
-                </FilterChip>
-              ))}
-              <a
-                href={`/camps?country=${encodeURIComponent(country || "Thailand")}`}
-                className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium text-clay hover:text-forest border border-dashed border-border"
-              >
-                All camps →
-              </a>
-            </FilterRow>
-          )}
-
-          <div className="space-y-4">
-            <FilterRow label="Range countries">
-              <FilterChip active={!country} onClick={() => updateParams({ country: null })}>
-                All
-              </FilterChip>
-              {rangeCountries.map((c) => (
-                <FilterChip
-                  key={c}
-                  active={country === c}
-                  onClick={() => updateParams({ country: c })}
-                >
-                  {c}
-                </FilterChip>
-              ))}
-            </FilterRow>
-
-            {countries.length > rangeCountries.length && (
-              <FilterRow label="All countries">
-                {countries.slice(0, 15).map((c) => (
-                  <FilterChip
-                    key={c.value}
-                    active={country === c.value}
-                    onClick={() => updateParams({ country: c.value })}
-                  >
-                    {c.value} <span className="opacity-60">{c.count}</span>
-                  </FilterChip>
-                ))}
-              </FilterRow>
-            )}
-
-            <FilterRow label="Status">
-              {statusOptions.map((opt) => (
-                <FilterChip
-                  key={opt.value}
-                  active={(status || "all") === opt.value}
-                  onClick={() =>
-                    updateParams({ status: opt.value === "all" ? null : opt.value })
-                  }
-                >
-                  {opt.label}
-                </FilterChip>
-              ))}
-            </FilterRow>
-
-            <FilterRow label="Records">
-              <FilterChip
-                active={!includeUnnamed}
-                onClick={() => updateParams({ includeUnnamed: null })}
-              >
-                Named only
-              </FilterChip>
-              <FilterChip
-                active={includeUnnamed}
-                onClick={() => updateParams({ includeUnnamed: "true" })}
-              >
-                Include unnamed
-              </FilterChip>
-            </FilterRow>
-
-            <FilterRow label="Sex">
-              {sexOptions.map((opt) => (
-                <FilterChip
-                  key={opt.value}
-                  active={(sex || "all") === opt.value}
-                  onClick={() => updateParams({ sex: opt.value === "all" ? null : opt.value })}
-                >
-                  {opt.label}
-                </FilterChip>
-              ))}
-            </FilterRow>
-
-            {categories.length > 0 && (
-              <FilterRow label="Facility type">
-                <FilterChip active={!category} onClick={() => updateParams({ category: null })}>
-                  All
-                </FilterChip>
-                {categories.map((c) => (
-                  <FilterChip
-                    key={c.value}
-                    active={category === c.value}
-                    onClick={() => updateParams({ category: c.value as ElephantCategory })}
-                  >
-                    {c.value} <span className="opacity-60">{c.count}</span>
-                  </FilterChip>
-                ))}
-              </FilterRow>
-            )}
-
-            {subspeciesList.length > 0 && (
-              <FilterRow label="Subspecies">
-                <FilterChip active={!subspecies} onClick={() => updateParams({ subspecies: null })}>
-                  All
-                </FilterChip>
-                {subspeciesList.map((s) => (
-                  <FilterChip
-                    key={s.value}
-                    active={subspecies === s.value}
-                    onClick={() => updateParams({ subspecies: s.value as ElephantSubspecies })}
-                  >
-                    {s.value} <span className="opacity-60">{s.count}</span>
-                  </FilterChip>
-                ))}
-              </FilterRow>
-            )}
-          </div>
         </Container>
       </section>
 
-      <section className="py-12 md:py-16">
+      {filtersOpen && (
+        <section className="border-b border-slate-200 bg-white">
+          <Container size="wide" className="py-5">
+            <div className="space-y-4">
+              <FilterRow label="Quick filters">
+                <FilterChip active={!includeUnnamed} onClick={() => updateParams({ includeUnnamed: null })}>
+                  Named only
+                </FilterChip>
+                <FilterChip
+                  active={includeUnnamed}
+                  onClick={() => updateParams({ includeUnnamed: "true" })}
+                >
+                  Include unnamed
+                </FilterChip>
+                <FilterChip
+                  active={hasStory}
+                  onClick={() => updateParams({ hasStory: hasStory ? null : "true" })}
+                >
+                  Has sanctuary story
+                </FilterChip>
+              </FilterRow>
+
+              {(locationName || locationId) && (
+                <FilterRow label="Facility">
+                  {locationId ? (
+                    <a
+                      href={`/camps/${locationId}`}
+                      className="text-sm font-medium text-forest hover:text-forest-light"
+                    >
+                      {locationName || `Location #${locationId}`}
+                    </a>
+                  ) : (
+                    <span className="text-sm font-medium text-slate-700">{locationName}</span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => updateParams({ locationId: null, locationName: null })}
+                    className="text-sm text-forest hover:text-forest-light ml-2"
+                  >
+                    Clear
+                  </button>
+                </FilterRow>
+              )}
+
+              {campChips.length > 0 && !locationId && (
+                <FilterRow label={country ? `Top camps in ${country}` : "Top camps in Thailand"}>
+                  {campChips.map((loc) => (
+                    <FilterChip
+                      key={loc.id}
+                      active={locationId === loc.id}
+                      onClick={() =>
+                        updateParams({
+                          locationId: loc.id,
+                          locationName: loc.name,
+                          category: "camp",
+                        })
+                      }
+                    >
+                      {loc.displayName}{" "}
+                      <span className="opacity-50">{loc.livingCount}</span>
+                      {loc.sanctuaryIds.length > 0 && (
+                        <span className="ml-0.5 text-[10px] text-forest">●</span>
+                      )}
+                    </FilterChip>
+                  ))}
+                  <a
+                    href={`/camps?country=${encodeURIComponent(country || "Thailand")}`}
+                    className="inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium text-forest hover:text-forest-light border border-dashed border-slate-300"
+                  >
+                    All camps →
+                  </a>
+                </FilterRow>
+              )}
+
+              <FilterRow label="Range countries">
+                <FilterChip active={!country} onClick={() => updateParams({ country: null })}>
+                  All
+                </FilterChip>
+                {rangeCountries.map((c) => (
+                  <FilterChip
+                    key={c}
+                    active={country === c}
+                    onClick={() => updateParams({ country: c })}
+                  >
+                    {c}
+                  </FilterChip>
+                ))}
+              </FilterRow>
+
+              {countries.length > rangeCountries.length && (
+                <FilterRow label="All countries">
+                  {countries.slice(0, 15).map((c) => (
+                    <FilterChip
+                      key={c.value}
+                      active={country === c.value}
+                      onClick={() => updateParams({ country: c.value })}
+                    >
+                      {c.value} <span className="opacity-50">{c.count}</span>
+                    </FilterChip>
+                  ))}
+                </FilterRow>
+              )}
+
+              <FilterRow label="Status">
+                {statusOptions.map((opt) => (
+                  <FilterChip
+                    key={opt.value}
+                    active={(status || "all") === opt.value}
+                    onClick={() =>
+                      updateParams({ status: opt.value === "all" ? null : opt.value })
+                    }
+                  >
+                    {opt.label}
+                  </FilterChip>
+                ))}
+              </FilterRow>
+
+              <FilterRow label="Sex">
+                {sexOptions.map((opt) => (
+                  <FilterChip
+                    key={opt.value}
+                    active={(sex || "all") === opt.value}
+                    onClick={() => updateParams({ sex: opt.value === "all" ? null : opt.value })}
+                  >
+                    {opt.label}
+                  </FilterChip>
+                ))}
+              </FilterRow>
+
+              {categories.length > 0 && (
+                <FilterRow label="Facility type">
+                  <FilterChip active={!category} onClick={() => updateParams({ category: null })}>
+                    All
+                  </FilterChip>
+                  {categories.map((c) => (
+                    <FilterChip
+                      key={c.value}
+                      active={category === c.value}
+                      onClick={() => updateParams({ category: c.value as ElephantCategory })}
+                    >
+                      {c.value} <span className="opacity-50">{c.count}</span>
+                    </FilterChip>
+                  ))}
+                </FilterRow>
+              )}
+
+              {subspeciesList.length > 0 && (
+                <FilterRow label="Subspecies">
+                  <FilterChip active={!subspecies} onClick={() => updateParams({ subspecies: null })}>
+                    All
+                  </FilterChip>
+                  {subspeciesList.map((s) => (
+                    <FilterChip
+                      key={s.value}
+                      active={subspecies === s.value}
+                      onClick={() => updateParams({ subspecies: s.value as ElephantSubspecies })}
+                    >
+                      {s.value} <span className="opacity-50">{s.count}</span>
+                    </FilterChip>
+                  ))}
+                </FilterRow>
+              )}
+            </div>
+          </Container>
+        </section>
+      )}
+
+      <section className="py-8">
         <Container size="wide">
-          <div className="flex items-center justify-between mb-6">
-            <p className="text-sm text-muted">
-              {loading
-                ? "Searching..."
-                : `${result?.total?.toLocaleString() ?? 0} elephant${result?.total === 1 ? "" : "s"}`}
+          <div className="flex items-center justify-between mb-5">
+            <p className="text-sm text-slate-500">
+              {loading ? (
+                "Searching..."
+              ) : (
+                <>
+                  <span className="font-semibold text-slate-900">
+                    {result?.total?.toLocaleString() ?? 0}
+                  </span>{" "}
+                  {result?.total === 1 ? "record" : "records"}
+                </>
+              )}
               {result?.source === "local" && !loading && (
                 <span className="ml-2 text-xs text-amber-700">(demo seed — set MYSQL_* in .env.local)</span>
               )}
             </p>
             {totalPages > 1 && !loading && (
-              <p className="text-sm text-muted">
+              <p className="text-sm text-slate-400">
                 Page {page} of {totalPages}
               </p>
             )}
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-40 rounded-2xl bg-border/40 animate-pulse" />
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+                  <div className="aspect-[4/3] bg-slate-100 animate-pulse" />
+                  <div className="p-3.5 space-y-2">
+                    <div className="h-4 bg-slate-100 rounded w-2/3 animate-pulse" />
+                    <div className="h-3 bg-slate-100 rounded w-full animate-pulse" />
+                    <div className="h-3 bg-slate-100 rounded w-1/2 animate-pulse" />
+                  </div>
+                </div>
               ))}
             </div>
           ) : result && result.elephants.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {result.elephants.map((elephant) => (
                 <ElephantCard key={elephant.id} elephant={elephant} />
               ))}
             </div>
           ) : (
-            <div className="text-center py-16 text-muted">
-              No elephants match. Try a broader search or clear filters.
+            <div className="text-center py-16 px-4 rounded-xl border border-dashed border-slate-300 bg-white">
+              <p className="text-base text-slate-900 font-medium mb-1">No records match</p>
+              <p className="text-sm text-slate-500 mb-6 max-w-md mx-auto">
+                Try a broader search, clear filters, or browse a well-known sanctuary.
+              </p>
+              <div className="flex flex-wrap justify-center gap-2 mb-4">
+                {suggestedCamps.map((camp) => (
+                  <a
+                    key={camp.id}
+                    href={`/camps/${camp.id}`}
+                    className="inline-flex items-center px-3.5 py-2 rounded-lg text-sm font-medium border border-slate-300 bg-white text-slate-700 hover:border-forest hover:text-forest transition-colors"
+                  >
+                    {camp.name}
+                  </a>
+                ))}
+              </div>
+              {activeFilters.length > 0 && (
+                <button
+                  type="button"
+                  onClick={clearAllFilters}
+                  className="text-sm text-forest hover:text-forest-light font-medium"
+                >
+                  Clear all filters
+                </button>
+              )}
             </div>
           )}
 
           {totalPages > 1 && !loading && (
-            <div className="flex justify-center gap-2 mt-10 flex-wrap">
+            <div className="flex justify-center gap-1.5 mt-10 flex-wrap">
               <PaginationButton
                 disabled={page <= 1}
                 onClick={() => updateParams({ page: String(page - 1) })}
@@ -417,15 +569,15 @@ export function ElephantSearch() {
           </div>
         </Container>
       </section>
-    </>
+    </div>
   );
 }
 
 function FilterRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-xs font-semibold uppercase tracking-wider text-clay mb-2">{label}</p>
-      <div className="flex flex-wrap gap-2">{children}</div>
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">{label}</p>
+      <div className="flex flex-wrap gap-1.5 items-center">{children}</div>
     </div>
   );
 }
@@ -444,10 +596,10 @@ function FilterChip({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+        "inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[13px] font-medium border transition-colors",
         active
-          ? "border-forest bg-forest text-ivory"
-          : "border-border bg-card text-forest hover:border-forest/30"
+          ? "border-forest bg-forest text-white"
+          : "border-slate-300 bg-white text-slate-600 hover:border-slate-400 hover:text-slate-900"
       )}
     >
       {children}
@@ -472,10 +624,10 @@ function PaginationButton({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors",
+        "px-3 py-1.5 rounded-md text-sm font-medium border transition-colors",
         active
-          ? "border-forest bg-forest text-ivory"
-          : "border-border bg-card text-forest hover:border-forest/30",
+          ? "border-forest bg-forest text-white"
+          : "border-slate-300 bg-white text-slate-700 hover:border-slate-400",
         disabled && "opacity-40 cursor-not-allowed"
       )}
     >

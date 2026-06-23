@@ -156,6 +156,39 @@ export async function getEnrichmentByElephantIdMysql(
   return rows[0] ? rowToEnrichment(rows[0]) : null;
 }
 
+export interface EnrichmentSummary {
+  elephantId: string;
+  photoUrl?: string;
+}
+
+export async function getEnrichmentSummariesByElephantIdsMysql(
+  elephantIds: string[]
+): Promise<Map<string, EnrichmentSummary>> {
+  const map = new Map<string, EnrichmentSummary>();
+  if (!elephantIds.length) return map;
+
+  const db = getMysqlPool();
+  const placeholders = elephantIds.map(() => "?").join(", ");
+  const [rows] = await db.query<EnrichmentRow[]>(
+    `SELECT elephant_id, photos FROM elephant_enrichments
+     WHERE elephant_id IN (${placeholders})
+     ORDER BY synced_at DESC`,
+    elephantIds
+  );
+
+  for (const row of rows) {
+    const elephantId = row.elephant_id;
+    if (!elephantId || map.has(elephantId)) continue;
+    const photos = parseJson<ElephantEnrichment["photos"]>(row.photos);
+    map.set(elephantId, {
+      elephantId,
+      photoUrl: photos?.[0]?.url,
+    });
+  }
+
+  return map;
+}
+
 export async function listEnrichmentsByLocationMysql(
   locationId: string
 ): Promise<ElephantEnrichment[]> {

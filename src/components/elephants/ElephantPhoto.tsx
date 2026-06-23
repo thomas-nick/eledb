@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import type { ElephantPhoto as ElephantPhotoType } from "@/types/elephant";
 import { resolveElephantPhotoUrl } from "@/lib/elephantSe";
 
@@ -18,7 +21,9 @@ export function ElephantPhoto({
   priority,
   showCredit = false,
 }: ElephantPhotoProps) {
-  if (photo) {
+  const [failed, setFailed] = useState(false);
+
+  if (photo && !failed) {
     return (
       <figure className={className}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -28,6 +33,8 @@ export function ElephantPhoto({
           className="w-full h-full object-cover"
           sizes={sizes}
           loading={priority ? "eager" : "lazy"}
+          decoding="async"
+          onError={() => setFailed(true)}
         />
         {showCredit && photo.credit && (
           <figcaption className="text-xs text-ivory/70 bg-forest/40 px-3 py-1.5 truncate">
@@ -38,15 +45,27 @@ export function ElephantPhoto({
     );
   }
 
+  return <ElephantPhotoPlaceholder className={className} />;
+}
+
+export function ElephantPhotoPlaceholder({ className = "" }: { className?: string }) {
   return (
     <div
-      className={`relative overflow-hidden bg-gradient-to-br from-forest-light via-forest to-forest w-full h-full ${className}`}
+      className={`relative overflow-hidden bg-slate-100 flex items-center justify-center ${className}`}
       aria-hidden
     >
-      <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_70%,var(--color-clay)_0%,transparent_50%)]" />
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-[8rem] md:text-[10rem] leading-none select-none opacity-25">🐘</span>
-      </div>
+      <svg
+        viewBox="0 0 64 48"
+        className="w-1/3 max-w-[96px] text-slate-300"
+        fill="currentColor"
+      >
+        <ellipse cx="30" cy="26" rx="20" ry="14" />
+        <circle cx="46" cy="16" r="9" />
+        <path d="M52 22c4 0 6 3 6 7s-3 6-5 5-3-4-2-7l1-5z" />
+        <rect x="14" y="34" width="7" height="12" rx="2" />
+        <rect x="26" y="35" width="7" height="11" rx="2" />
+        <rect x="38" y="34" width="7" height="12" rx="2" />
+      </svg>
     </div>
   );
 }

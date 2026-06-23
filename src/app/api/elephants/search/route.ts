@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
     category: (searchParams.get("category") as ElephantCategory) ?? undefined,
     sort: (searchParams.get("sort") as ElephantSort) ?? undefined,
     namedOnly: searchParams.get("includeUnnamed") !== "true",
+    hasStory: searchParams.get("hasStory") === "true",
     page: Number(searchParams.get("page") ?? 1),
     perPage: Number(searchParams.get("perPage") ?? 24),
   });

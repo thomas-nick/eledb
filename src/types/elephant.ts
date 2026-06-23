@@ -49,6 +49,10 @@ export interface ElephantRecord {
   sources?: string[];
   sourceUrl: string;
   syncedAt: string;
+  /** Resolved cover image for list cards (search API only) */
+  photoUrl?: string;
+  /** Linked sanctuary enrichment profile exists */
+  hasEnrichment?: boolean;
 }
 
 export interface ElephantSearchParams {
@@ -63,6 +67,8 @@ export interface ElephantSearchParams {
   sort?: ElephantSort;
   /** When true, hide elephant.se placeholders with no real name */
   namedOnly?: boolean;
+  /** When true, only elephants with a linked sanctuary story */
+  hasStory?: boolean;
   page?: number;
   perPage?: number;
 }

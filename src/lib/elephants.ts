@@ -6,6 +6,7 @@ import {
   isMysqlConfigured,
   searchElephantsMysql,
 } from "@/lib/elephant-db";
+import { enrichSearchResults } from "@/lib/elephantEnrichments";
 import type {
   ElephantRecord,
   ElephantSearchParams,
@@ -45,6 +46,7 @@ function filterLocal(
     if (params.locationName && record.locationName !== params.locationName) return false;
     if (params.category && record.category !== params.category) return false;
     if (params.namedOnly && isUnnamedRecord(record)) return false;
+    if (params.hasStory) return false;
     if (!q) return true;
     const haystack = [
       record.name,
@@ -105,7 +107,11 @@ export async function searchElephants(
   params: ElephantSearchParams
 ): Promise<ElephantSearchResult> {
   if (isMysqlConfigured()) {
-    return await searchElephantsMysql(params);
+    const result = await searchElephantsMysql(params);
+    return {
+      ...result,
+      elephants: await enrichSearchResults(result.elephants),
+    };
   }
   return searchLocal(params);
 }

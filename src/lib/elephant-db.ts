@@ -397,6 +397,11 @@ function buildFilters(params: ElephantSearchParams): FilterClause {
   if (params.namedOnly) {
     parts.push("name != 'unknown' AND TRIM(name) != '' AND LOWER(TRIM(name)) != 'unnamed'");
   }
+  if (params.hasStory) {
+    parts.push(
+      "id IN (SELECT elephant_id FROM elephant_enrichments WHERE elephant_id IS NOT NULL)"
+    );
+  }
 
   return {
     sql: parts.length ? ` AND ${parts.join(" AND ")}` : "",
