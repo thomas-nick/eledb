@@ -18,13 +18,16 @@ export function ElephantUnnamedBanner({ elephant }: ElephantUnnamedBannerProps) 
           </h2>
           <p className="text-sm md:text-base text-muted leading-relaxed mb-4">
             elephant.se lists this individual at <strong className="text-forest">{elephant.locationName}</strong>{" "}
-            without a name or details — a placeholder until someone registers them. We&apos;re building
-            a way for mahouts and camps to add photos, local names, and stories. Be among the first.
+            without a name or details — a placeholder until someone registers them. If you&apos;re a mahout,
+            camp, or visitor who knows this elephant, add a photo, local name, or details. Be among the first.
           </p>
           <div className="flex flex-wrap gap-3">
-            <span className="inline-flex items-center px-4 py-2 rounded-full bg-forest/10 text-forest text-sm font-medium">
-              Mahout contributions — coming soon
-            </span>
+            <a
+              href="#contribute"
+              className="inline-flex items-center px-4 py-2 rounded-full bg-forest text-ivory text-sm font-medium hover:bg-forest-light transition-colors"
+            >
+              Add a photo or details
+            </a>
             <a
               href={elephant.sourceUrl}
               target="_blank"

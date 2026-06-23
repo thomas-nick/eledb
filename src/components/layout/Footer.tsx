@@ -3,8 +3,10 @@ import { Container } from "@/components/ui/Container";
 
 const footerLinks = {
   Explore: [
-    { href: "/sanctuaries", label: "Sanctuaries & Camps" },
+    { href: "/sanctuaries", label: "Sanctuaries" },
+    { href: "/camps", label: "Camps" },
     { href: "/elephants", label: "Elephant Database" },
+    { href: "/countries", label: "Countries" },
     { href: "/corridors", label: "Wild Corridors" },
     { href: "/coexistence", label: "Range Map" },
     { href: "/resources", label: "Field Notes" },

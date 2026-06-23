@@ -20,6 +20,7 @@ import type { Hotspot } from "@/data/hotspots";
 import { cn } from "@/lib/utils";
 import { LabelWithTooltip } from "@/components/ui/InfoTooltip";
 import { HEC_INCIDENTS_TOOLTIP } from "@/lib/glossary";
+import { track } from "@/lib/analytics";
 import "leaflet/dist/leaflet.css";
 
 function MapResizeFix() {
@@ -88,6 +89,7 @@ export function RangeMapLeaflet() {
         mouseover: () => setActiveStateId(id),
         mouseout: () => setActiveStateId((cur) => (cur === id ? null : cur)),
         click: () => {
+          track("map_country_click", { country: state.name, slug: id });
           router.push(`/countries/${id}`);
         },
       });
@@ -155,7 +157,13 @@ export function RangeMapLeaflet() {
                       fillOpacity: selected ? 1 : 0.9,
                     }}
                     eventHandlers={{
-                      click: () => setSelectedHotspot(hotspot),
+                      click: () => {
+                        track("map_hotspot_click", {
+                          hotspot: hotspot.name,
+                          country: hotspot.country,
+                        });
+                        setSelectedHotspot(hotspot);
+                      },
                     }}
                   />
                 );

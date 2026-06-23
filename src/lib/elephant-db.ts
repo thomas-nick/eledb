@@ -363,15 +363,21 @@ export async function upsertElephants(records: ElephantRecord[]): Promise<void> 
 
 type FilterClause = { sql: string; params: (string | number)[] };
 
-function buildFilters(params: ElephantSearchParams): FilterClause {
+/** Facet dimensions that can be excluded when scoping facet counts. */
+type FacetDimension = "country" | "status" | "category" | "subspecies" | "location";
+
+function buildFilters(
+  params: ElephantSearchParams,
+  exclude?: FacetDimension
+): FilterClause {
   const parts: string[] = [];
   const values: (string | number)[] = [];
 
-  if (params.country) {
+  if (params.country && exclude !== "country") {
     parts.push("country = ?");
     values.push(params.country);
   }
-  if (params.status) {
+  if (params.status && exclude !== "status") {
     parts.push("status = ?");
     values.push(params.status);
   }
@@ -379,18 +385,20 @@ function buildFilters(params: ElephantSearchParams): FilterClause {
     parts.push("sex = ?");
     values.push(params.sex);
   }
-  if (params.subspecies) {
+  if (params.subspecies && exclude !== "subspecies") {
     parts.push("subspecies = ?");
     values.push(params.subspecies);
   }
-  if (params.locationId) {
-    parts.push("location_id = ?");
-    values.push(params.locationId);
-  } else if (params.locationName) {
-    parts.push("location_name = ?");
-    values.push(params.locationName);
+  if (exclude !== "location") {
+    if (params.locationId) {
+      parts.push("location_id = ?");
+      values.push(params.locationId);
+    } else if (params.locationName) {
+      parts.push("location_name = ?");
+      values.push(params.locationName);
+    }
   }
-  if (params.category) {
+  if (params.category && exclude !== "category") {
     parts.push("category = ?");
     values.push(params.category);
   }
@@ -407,6 +415,22 @@ function buildFilters(params: ElephantSearchParams): FilterClause {
     sql: parts.length ? ` AND ${parts.join(" AND ")}` : "",
     params: values,
   };
+}
+
+/** True when the query has any filter/search that should scope facet counts. */
+function hasActiveScope(params: ElephantSearchParams): boolean {
+  return Boolean(
+    params.q?.trim() ||
+      params.country ||
+      params.status ||
+      params.sex ||
+      params.subspecies ||
+      params.category ||
+      params.locationId ||
+      params.locationName ||
+      params.hasStory ||
+      params.namedOnly
+  );
 }
 
 function buildSearchClause(q?: string): FilterClause {
@@ -475,6 +499,33 @@ async function getGlobalFacets(db: Pool): Promise<ElephantSearchResult["facets"]
   return facets;
 }
 
+/**
+ * Facet counts scoped to the active query. Each dimension is computed against
+ * all *other* active filters (plus the search term) but excludes its own filter,
+ * so users can still see and switch between values within that dimension.
+ */
+async function getScopedFacets(
+  db: Pool,
+  params: ElephantSearchParams,
+  search: FilterClause
+): Promise<ElephantSearchResult["facets"]> {
+  const scope = (column: string, dimension: FacetDimension) => {
+    const filters = buildFilters(params, dimension);
+    const where = `${filters.sql}${search.sql}`;
+    return facetQuery(db, column, where, [...filters.params, ...search.params]);
+  };
+
+  const [countries, statuses, categories, subspecies, locations] = await Promise.all([
+    scope("country", "country"),
+    scope("status", "status"),
+    scope("category", "category"),
+    scope("subspecies", "subspecies"),
+    scope("location_name", "location"),
+  ]);
+
+  return { countries, statuses, categories, subspecies, locations };
+}
+
 export async function searchElephantsMysql(
   params: ElephantSearchParams
 ): Promise<ElephantSearchResult> {
@@ -502,7 +553,10 @@ export async function searchElephantsMysql(
     [...whereParams, perPage, offset]
   );
 
-  const facets = await getGlobalFacets(db);
+  // Cached global facets for the unfiltered landing view; scoped facets otherwise.
+  const facets = hasActiveScope(params)
+    ? await getScopedFacets(db, params, search)
+    : await getGlobalFacets(db);
 
   return {
     elephants: rows.map(rowToRecord),

@@ -15,11 +15,11 @@ export function DonateCTA() {
             one of the most tangible conservation levers out there.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
-            <Button href="/corridors" size="lg">
-              Explore Corridors
+            <Button href="/donate" size="lg">
+              Support Corridors
             </Button>
-            <Button href="/coexistence" variant="outline" size="lg">
-              See the Range Map
+            <Button href="/corridors" variant="outline" size="lg">
+              Explore Corridors
             </Button>
           </div>
         </div>

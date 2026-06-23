@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { signIn, signOut, useSession } from "next-auth/react";
-import { useState } from "react";
+import { getProviders, signIn, signOut, useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 import { isModerator } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 
@@ -87,7 +87,7 @@ export function AuthHeaderActions() {
   );
 }
 
-export function GoogleSignInButton({ callbackUrl = "/" }: { callbackUrl?: string }) {
+function GoogleSignInButton({ callbackUrl = "/" }: { callbackUrl?: string }) {
   return (
     <button
       type="button"
@@ -96,5 +96,45 @@ export function GoogleSignInButton({ callbackUrl = "/" }: { callbackUrl?: string
     >
       Continue with Google
     </button>
+  );
+}
+
+/**
+ * Google sign-in button plus the "or" divider. Renders only when the Google
+ * provider is actually configured on the server, so neither the button (which
+ * would error on click) nor an orphaned divider appear when OAuth is unset.
+ */
+export function GoogleAuthSection({ callbackUrl = "/" }: { callbackUrl?: string }) {
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    getProviders()
+      .then((providers) => {
+        if (active) setEnabled(Boolean(providers?.google));
+      })
+      .catch(() => {
+        if (active) setEnabled(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (!enabled) return null;
+
+  return (
+    <>
+      <GoogleSignInButton callbackUrl={callbackUrl} />
+
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-slate-200" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-slate-50 px-2 text-slate-400">or</span>
+        </div>
+      </div>
+    </>
   );
 }

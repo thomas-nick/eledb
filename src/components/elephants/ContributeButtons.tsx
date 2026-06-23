@@ -6,6 +6,7 @@ import { useState } from "react";
 import type { ElephantRecord } from "@/types/elephant";
 import { ContributeInfoForm } from "@/components/elephants/ContributeInfoForm";
 import { ContributePhotoForm } from "@/components/elephants/ContributePhotoForm";
+import { track } from "@/lib/analytics";
 
 interface ContributeButtonsProps {
   elephant: ElephantRecord;
@@ -33,14 +34,22 @@ export function ContributeButtons({ elephant }: ContributeButtonsProps) {
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          onClick={() => setMode(mode === "photo" ? null : "photo")}
+          onClick={() => {
+            const next = mode === "photo" ? null : "photo";
+            if (next) track("contribute_open", { type: "photo", elephantId: elephant.id });
+            setMode(next);
+          }}
           className="inline-flex items-center rounded-lg bg-forest px-3 py-2 text-sm font-medium text-white hover:bg-forest-light"
         >
           Add photo
         </button>
         <button
           type="button"
-          onClick={() => setMode(mode === "info" ? null : "info")}
+          onClick={() => {
+            const next = mode === "info" ? null : "info";
+            if (next) track("contribute_open", { type: "info", elephantId: elephant.id });
+            setMode(next);
+          }}
           className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:border-forest"
         >
           Suggest edit

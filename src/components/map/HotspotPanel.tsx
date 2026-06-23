@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Hotspot } from "@/data/hotspots";
+import { articles } from "@/data/articles";
 import { getCountrySlugFromDbName } from "@/data/countryMeta";
 import { Badge } from "@/components/ui/Badge";
 
@@ -53,6 +54,9 @@ export function HotspotPanel({ hotspot, onClose }: HotspotPanelProps) {
   }
 
   const countrySlug = getCountrySlugFromDbName(hotspot.country);
+  const relatedArticle = hotspot.relatedArticleSlug
+    ? articles.find((a) => a.slug === hotspot.relatedArticleSlug)
+    : undefined;
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-6">
@@ -128,6 +132,20 @@ export function HotspotPanel({ hotspot, onClose }: HotspotPanelProps) {
           Camps in {hotspot.country}
         </Link>
       </div>
+
+      {relatedArticle && (
+        <div className="mt-4 rounded-lg border border-clay/30 bg-clay-light/20 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-clay mb-1">
+            Read the field note
+          </p>
+          <Link
+            href={`/resources/${relatedArticle.slug}`}
+            className="text-sm font-medium text-forest hover:underline"
+          >
+            {relatedArticle.title} →
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

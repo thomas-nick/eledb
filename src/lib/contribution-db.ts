@@ -134,7 +134,46 @@ function rowToCommunityPhoto(row: CommunityPhotoRow): CommunityPhoto {
 export async function migrateContributionSchema(): Promise<void> {
   await migrateAuthSchema();
   const db = getMysqlPool();
-  await db.query(CONTRIBUTIONS_SCHEMA_SQL);
+  const statements = [
+    `CREATE TABLE IF NOT EXISTS contributions (
+  id VARCHAR(36) NOT NULL PRIMARY KEY,
+  elephant_id VARCHAR(32) NOT NULL,
+  user_id VARCHAR(36) NOT NULL,
+  type ENUM('info', 'photo') NOT NULL,
+  payload JSON NOT NULL,
+  status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+  reviewer_id VARCHAR(36) NULL,
+  review_note TEXT NULL,
+  created_at DATETIME NOT NULL,
+  reviewed_at DATETIME NULL,
+  INDEX idx_elephant_id (elephant_id),
+  INDEX idx_user_id (user_id),
+  INDEX idx_status (status),
+  INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    `CREATE TABLE IF NOT EXISTS community_photos (
+  id VARCHAR(36) NOT NULL PRIMARY KEY,
+  elephant_id VARCHAR(32) NOT NULL,
+  contribution_id VARCHAR(36) NULL,
+  url VARCHAR(512) NOT NULL,
+  credit VARCHAR(255) NULL,
+  caption TEXT NULL,
+  uploaded_by VARCHAR(36) NULL,
+  created_at DATETIME NOT NULL,
+  INDEX idx_elephant_id (elephant_id),
+  INDEX idx_uploaded_by (uploaded_by)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    `CREATE TABLE IF NOT EXISTS elephant_overrides (
+  elephant_id VARCHAR(32) NOT NULL PRIMARY KEY,
+  fields JSON NOT NULL,
+  updated_by VARCHAR(36) NULL,
+  updated_at DATETIME NOT NULL,
+  INDEX idx_updated_by (updated_by)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+  ];
+  for (const sql of statements) {
+    await db.query(sql);
+  }
 }
 
 export function isOverrideField(key: string): key is OverrideFieldKey {

@@ -8,8 +8,16 @@ import { ElephantAttribution } from "@/components/elephants/ElephantAttribution"
 import { sanctuaries } from "@/data/sanctuaries";
 import { getLocation } from "@/lib/locations";
 import { searchElephants } from "@/lib/elephants";
+import { getLocationEnrichments } from "@/lib/elephantEnrichments";
+import { resolveElephantPhotoUrl } from "@/lib/elephantSe";
 import { locationElephantSeUrl } from "@/lib/locationDisplay";
 import { experienceTypeLabels } from "@/data/sanctuaries";
+
+const enrichmentSourceLabels: Record<string, string> = {
+  "elephant-nature-park": "Elephant Nature Park",
+  "wildlife-sos": "Wildlife SOS",
+  "phuket-elephant-sanctuary": "Phuket Elephant Sanctuary",
+};
 
 interface CampPageProps {
   params: Promise<{ locationId: string }>;
@@ -33,13 +41,18 @@ export default async function CampPage({ params }: CampPageProps) {
   const linkedSanctuaries = sanctuaries.filter((s) => location.sanctuaryIds.includes(s.id));
   const unnamedLiving = location.livingCount - location.namedCount;
 
-  const { elephants, total } = await searchElephants({
-    locationId,
-    status: "living",
-    sort: "name",
-    perPage: 24,
-    namedOnly: true,
-  });
+  const [{ elephants, total }, enrichments] = await Promise.all([
+    searchElephants({
+      locationId,
+      status: "living",
+      sort: "name",
+      perPage: 24,
+      namedOnly: true,
+    }),
+    getLocationEnrichments(locationId),
+  ]);
+
+  const stories = enrichments.filter((e) => e.teaser || e.story).slice(0, 6);
 
   return (
     <>
@@ -125,6 +138,67 @@ export default async function CampPage({ params }: CampPageProps) {
                   </div>
                 </Card>
               ))}
+            </div>
+          )}
+
+          {stories.length > 0 && (
+            <div className="mb-10">
+              <h2 className="font-serif text-2xl font-bold text-forest mb-1">
+                Sanctuary stories
+              </h2>
+              <p className="text-sm text-muted mb-5">
+                Rescue and care profiles published by sanctuaries connected to this facility.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {stories.map((story) => {
+                  const photo = story.photos?.[0];
+                  const heading = story.localName ?? story.displayName;
+                  return (
+                    <Card key={story.id} className="overflow-hidden p-0 flex flex-col">
+                      {photo && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={resolveElephantPhotoUrl(photo.url)}
+                          alt={heading}
+                          className="w-full h-44 object-cover"
+                        />
+                      )}
+                      <div className="p-5 flex-1 flex flex-col">
+                        <Badge variant="default" className="self-start text-[10px] mb-2">
+                          {enrichmentSourceLabels[story.source] ?? story.source}
+                        </Badge>
+                        <h3 className="font-serif text-lg font-bold text-forest mb-1">{heading}</h3>
+                        {story.rescueLocation && (
+                          <p className="text-xs text-muted mb-2">Rescued from {story.rescueLocation}</p>
+                        )}
+                        {story.teaser && (
+                          <p className="text-sm text-muted leading-relaxed mb-4 line-clamp-4">
+                            {story.teaser}
+                          </p>
+                        )}
+                        <div className="mt-auto flex flex-wrap gap-4 text-sm">
+                          {story.elephantId && (
+                            <Link
+                              href={`/elephants/${story.elephantId}`}
+                              className="text-clay hover:text-forest font-medium"
+                            >
+                              View record →
+                            </Link>
+                          )}
+                          <a
+                            href={story.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-clay hover:text-forest font-medium"
+                          >
+                            Full story ↗
+                          </a>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
             </div>
           )}
 

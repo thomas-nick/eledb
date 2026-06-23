@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { AuthSessionProvider } from "@/components/providers/AuthSessionProvider";
+import { Analytics } from "@/components/analytics/Analytics";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -18,6 +20,7 @@ const sourceSans = Source_Sans_3({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Asian Elephant",
     template: "%s | Asian Elephant",
@@ -42,6 +45,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${playfair.variable} ${sourceSans.variable} h-full`}>
       <body className="min-h-full flex flex-col antialiased">
+        <Analytics />
         <AuthSessionProvider>
           <Header />
           <main className="flex-1">{children}</main>

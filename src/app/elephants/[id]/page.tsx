@@ -30,6 +30,8 @@ import { resolveElephantPhotoUrl } from "@/lib/elephantSe";
 import { getElephantById, getHerdMates, getOffspring } from "@/lib/elephants";
 import { getSanctuaryIdsForLocation } from "@/data/elephantSeLocations";
 import { sanctuaries } from "@/data/sanctuaries";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { absoluteUrl } from "@/lib/site";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -109,8 +111,32 @@ export default async function ElephantDetailPage({ params }: PageProps) {
     { label: displayName },
   ];
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: `${displayName} — ${elephant.locationName}`,
+    description: `Asian elephant record for ${displayName} at ${elephant.locationName}, ${elephant.country}.`,
+    url: absoluteUrl(`/elephants/${elephant.id}`),
+    ...(photos[0] && { primaryImageOfPage: photos[0].url }),
+    about: {
+      "@type": "Thing",
+      name: displayName,
+      description: `Asian elephant (${elephant.species}) at ${elephant.locationName}, ${elephant.country}.`,
+    },
+    breadcrumb: {
+      "@type": "BreadcrumbList",
+      itemListElement: breadcrumbItems.map((item, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        name: item.label,
+        ...(item.href && { item: absoluteUrl(item.href) }),
+      })),
+    },
+  };
+
   return (
     <div className="bg-slate-50 min-h-screen">
+      <JsonLd data={jsonLd} />
       <Container size="wide" className="py-6 md:py-8">
         <Breadcrumb items={breadcrumbItems} />
 

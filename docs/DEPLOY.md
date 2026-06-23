@@ -23,6 +23,11 @@ Copy `.env.example` to `.env.local` (dev) or set in Hostinger Node app env (prod
 | `GOOGLE_CLIENT_SECRET` | From Google Cloud Console |
 | `ADMIN_EMAILS` | Your email (comma-separated for multiple admins) |
 | `UPLOAD_DIR` | Persistent path **outside** the git deploy dir, e.g. `/home/.../private/uploads` |
+| `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | (Optional) e.g. `mahoot.xyz` — enables Plausible analytics |
+| `NEXT_PUBLIC_PLAUSIBLE_SRC` | (Optional) Plausible script URL; defaults to `https://plausible.io/js/script.js` |
+| `ERROR_WEBHOOK_URL` | (Optional) Webhook for server errors (Sentry-compatible sink) |
+
+Set these in **hPanel → Websites → mahoot.xyz → Node.js → Environment variables**, or in `.env.production` (bundled with Hostinger deploy). `NEXT_PUBLIC_*` vars must be present **before** `npm run build` on the server.
 
 ## 3. Google OAuth
 

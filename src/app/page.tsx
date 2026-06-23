@@ -1,6 +1,7 @@
 import { Hero } from "@/components/home/Hero";
 import { StatsSection } from "@/components/home/StatsSection";
 import { PillarCards } from "@/components/home/PillarCards";
+import { DatabaseCTA } from "@/components/home/DatabaseCTA";
 import { DonateCTA } from "@/components/home/DonateCTA";
 import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -18,6 +19,7 @@ export default function HomePage() {
     <>
       <Hero />
       <StatsSection />
+      <DatabaseCTA />
       <PillarCards />
 
       <section className="py-24">

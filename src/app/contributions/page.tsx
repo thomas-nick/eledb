@@ -44,8 +44,8 @@ export default function MyContributionsPage() {
 
         <ul className="mt-8 divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white">
           {contributions.map((c) => (
-            <li key={c.id} className="px-4 py-3 flex items-center justify-between gap-4">
-              <div>
+            <li key={c.id} className="px-4 py-3 flex items-start justify-between gap-4">
+              <div className="min-w-0">
                 <p className="text-sm font-medium text-slate-900">
                   {c.type === "photo" ? "Photo" : "Info edit"} ·{" "}
                   <Link href={`/elephants/${c.elephantId}`} className="text-forest hover:underline">
@@ -53,6 +53,17 @@ export default function MyContributionsPage() {
                   </Link>
                 </p>
                 <p className="text-xs text-slate-500">{new Date(c.createdAt).toLocaleString()}</p>
+                {c.reviewNote && (
+                  <p
+                    className={`mt-2 text-xs rounded-md px-2 py-1.5 ${
+                      c.status === "rejected"
+                        ? "bg-red-50 text-red-700"
+                        : "bg-slate-50 text-slate-600"
+                    }`}
+                  >
+                    <span className="font-medium">Reviewer note:</span> {c.reviewNote}
+                  </p>
+                )}
               </div>
               <StatusBadge status={c.status} />
             </li>

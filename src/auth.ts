@@ -10,7 +10,7 @@ import type { UserRole } from "@/types/auth";
 import { isModerator as checkModerator } from "@/lib/roles";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  trustHost: process.env.AUTH_TRUST_HOST === "true",
+  trustHost: true,
   providers: [
     ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
       ? [

@@ -17,6 +17,7 @@ import type {
 import type { LocationSummary } from "@/types/location";
 import { cn } from "@/lib/utils";
 import { getCountrySlugFromDbName } from "@/data/countryMeta";
+import { track } from "@/lib/analytics";
 
 const statusOptions: { value: ElephantStatus | "all"; label: string }[] = [
   { value: "all", label: "All" },
@@ -200,6 +201,7 @@ export function ElephantSearch() {
     if (q === urlQ) return;
 
     const timer = setTimeout(() => {
+      if (q) track("search", { source: "database", query: q });
       updateParams({ q: q || null });
     }, 300);
     return () => clearTimeout(timer);

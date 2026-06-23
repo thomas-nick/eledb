@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { Container } from "@/components/ui/Container";
-import { GoogleSignInButton } from "@/components/auth/AuthHeaderActions";
+import { GoogleAuthSection } from "@/components/auth/AuthHeaderActions";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -54,16 +54,7 @@ export default function SignupPage() {
           <p className="mt-1 text-sm text-slate-500">Join the community catalog on mahoot.xyz.</p>
 
           <div className="mt-8 space-y-4">
-            <GoogleSignInButton />
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-slate-50 px-2 text-slate-400">or</span>
-              </div>
-            </div>
+            <GoogleAuthSection />
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && <p className="text-sm text-red-600">{error}</p>}

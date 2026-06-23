@@ -11,6 +11,7 @@ const navLinks = [
   { href: "/sanctuaries", label: "Sanctuaries" },
   { href: "/camps", label: "Camps" },
   { href: "/elephants", label: "Elephants" },
+  { href: "/countries", label: "Countries" },
   { href: "/corridors", label: "Corridors" },
   { href: "/coexistence", label: "Range Map" },
   { href: "/resources", label: "Field Notes" },

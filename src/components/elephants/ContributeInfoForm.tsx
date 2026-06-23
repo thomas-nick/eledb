@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { ElephantRecord } from "@/types/elephant";
 import { OVERRIDE_FIELD_KEYS } from "@/types/contribution";
+import { track } from "@/lib/analytics";
 
 const fieldLabels: Record<string, string> = {
   name: "Name",
@@ -66,6 +67,7 @@ export function ContributeInfoForm({ elephant, onDone }: ContributeInfoFormProps
       return;
     }
 
+    track("contribute_submit", { type: "info", elephantId: elephant.id });
     setSuccess(true);
     setTimeout(onDone, 1500);
   }

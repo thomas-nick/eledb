@@ -11,6 +11,8 @@ export interface Hotspot {
   impact: string;
   yearStarted: number;
   communitySize: number;
+  /** Slug of a related field-notes article (src/data/articles.ts), if any. */
+  relatedArticleSlug?: string;
 }
 
 export const hotspots: Hotspot[] = [
@@ -28,6 +30,7 @@ export const hotspots: Hotspot[] = [
     impact: "92% reduction in crop raids across 8 villages",
     yearStarted: 2018,
     communitySize: 2400,
+    relatedArticleSlug: "beehive-fencing-assam",
   },
   {
     id: "chili-thailand",
@@ -58,6 +61,7 @@ export const hotspots: Hotspot[] = [
     impact: "Zero human fatalities in pilot villages since 2019",
     yearStarted: 2019,
     communitySize: 1200,
+    relatedArticleSlug: "sms-warning-sri-lanka",
   },
   {
     id: "nepal-corridor",
@@ -88,6 +92,7 @@ export const hotspots: Hotspot[] = [
     impact: "65% reduction in retaliatory killings in Way Kambas",
     yearStarted: 2017,
     communitySize: 3200,
+    relatedArticleSlug: "sumatra-genetic-crisis",
   },
   {
     id: "karnataka-solar",

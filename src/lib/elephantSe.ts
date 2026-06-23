@@ -1,8 +1,12 @@
 export const ELEPHANT_SE_BASE = "https://www.elephant.se";
 
-/** Resolve relative elephant.se image paths to absolute URLs */
+/**
+ * Resolve relative elephant.se image paths to absolute URLs.
+ * Absolute URLs and app-served community uploads (`/api/uploads/...`) pass
+ * through unchanged so this function is safe to call idempotently.
+ */
 export function resolveElephantPhotoUrl(url: string): string {
-  if (/^https?:\/\//i.test(url)) return url;
+  if (/^https?:\/\//i.test(url) || url.startsWith("/api/uploads/")) return url;
   const path = url.startsWith("/") ? url : `/${url}`;
   return `${ELEPHANT_SE_BASE}${path}`;
 }

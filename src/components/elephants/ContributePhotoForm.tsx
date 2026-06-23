@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { track } from "@/lib/analytics";
 
 interface ContributePhotoFormProps {
   elephantId: string;
@@ -40,6 +41,7 @@ export function ContributePhotoForm({ elephantId, onDone }: ContributePhotoFormP
       return;
     }
 
+    track("contribute_submit", { type: "photo", elephantId });
     setSuccess(true);
     setTimeout(onDone, 1500);
   }

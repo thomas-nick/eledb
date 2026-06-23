@@ -5,12 +5,14 @@ import { getCommunityPhotoSummaries } from "@/lib/contribution-db";
 import {
   getEnrichmentByElephantIdMysql,
   getEnrichmentSummariesByElephantIdsMysql,
+  listEnrichmentsByLocationMysql,
   isMysqlConfigured,
 } from "@/lib/elephant-enrichment-db";
 import { resolveElephantPhotoUrl } from "@/lib/elephantSe";
 
+/** Resolve a stored photo URL for display (uploads + absolute URLs pass through). */
 function resolvePhotoUrl(url: string): string {
-  return url.startsWith("http") ? url : resolveElephantPhotoUrl(url);
+  return resolveElephantPhotoUrl(url);
 }
 
 /** Best cover photo for a list card: community -> enrichment -> elephant.se */
@@ -59,6 +61,18 @@ export async function getElephantEnrichment(
   }
 }
 
+/** Sanctuary stories tied to a camp/location (by location_id or its elephants). */
+export async function getLocationEnrichments(
+  locationId: string
+): Promise<ElephantEnrichment[]> {
+  if (!isMysqlConfigured()) return [];
+  try {
+    return await listEnrichmentsByLocationMysql(locationId);
+  } catch {
+    return [];
+  }
+}
+
 /** Community photos first, then enrichment, then elephant.se — deduped by resolved URL */
 export function mergeProfilePhotos(
   elephantPhotos: ElephantPhoto[] | undefined,
@@ -69,7 +83,7 @@ export function mergeProfilePhotos(
   const merged: ElephantPhoto[] = [];
 
   const add = (url: string, credit?: string) => {
-    const resolved = url.startsWith("http") ? url : resolveElephantPhotoUrl(url);
+    const resolved = resolvePhotoUrl(url);
     if (seen.has(resolved)) return;
     seen.add(resolved);
     merged.push({ url: resolved, credit });

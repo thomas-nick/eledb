@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { articles, categoryLabels } from "@/data/articles";
+import { hotspots } from "@/data/hotspots";
+import { getCountrySlugFromDbName } from "@/data/countryMeta";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { absoluteUrl } from "@/lib/site";
 
 interface ArticlePageProps {
   params: Promise<{ slug: string }>;
@@ -30,8 +35,33 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
   if (!article) notFound();
 
+  const relatedHotspot = hotspots.find((h) => h.relatedArticleSlug === article.slug);
+  const relatedCountrySlug = relatedHotspot
+    ? getCountrySlugFromDbName(relatedHotspot.country)
+    : undefined;
+
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: article.title,
+    description: article.excerpt,
+    image: article.image,
+    datePublished: article.date,
+    author: { "@type": "Person", name: article.author },
+    publisher: {
+      "@type": "Organization",
+      name: "Asian Elephant",
+      url: absoluteUrl("/"),
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": absoluteUrl(`/resources/${article.slug}`),
+    },
+  };
+
   return (
     <>
+      <JsonLd data={articleJsonLd} />
       <section className="relative h-[40vh] min-h-[300px]">
         <Image
           src={article.image}
@@ -69,6 +99,34 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               </p>
             ))}
           </div>
+
+          {relatedHotspot && (
+            <div className="mt-12 rounded-xl border border-clay/30 bg-clay-light/20 p-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-clay mb-2">
+                On the range map
+              </p>
+              <h2 className="font-serif text-xl font-bold text-forest mb-2">
+                {relatedHotspot.name}
+              </h2>
+              <p className="text-sm text-muted leading-relaxed mb-4">
+                This story maps to a coexistence hotspot in {relatedHotspot.country}.{" "}
+                {relatedHotspot.impact}.
+              </p>
+              <div className="flex flex-wrap gap-4 text-sm">
+                <Link href="/coexistence" className="text-clay hover:text-forest font-medium">
+                  See it on the range map →
+                </Link>
+                {relatedCountrySlug && (
+                  <Link
+                    href={`/countries/${relatedCountrySlug}`}
+                    className="text-clay hover:text-forest font-medium"
+                  >
+                    {relatedHotspot.country} country hub →
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="mt-12 pt-8 border-t border-border flex flex-wrap gap-4">
             <Button href="/resources" variant="outline">

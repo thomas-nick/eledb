@@ -10,8 +10,8 @@ export function Hero() {
   return (
     <section className="relative min-h-[85vh] flex items-center overflow-hidden">
       <Image
-        src="https://images.unsplash.com/photo-1564760055775-d63b17a55c44?w=1920&q=80"
-        alt="Asian elephant in natural habitat"
+        src="https://images.unsplash.com/photo-1729231242719-ab01f33ac2cc?w=1920&q=80"
+        alt="Asian elephant in a forest sanctuary"
         fill
         priority
         className="object-cover"
