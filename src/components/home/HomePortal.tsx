@@ -3,11 +3,12 @@ import { HomeExploreNav } from "@/components/home/HomeExploreNav";
 import { HomeSearch } from "@/components/home/HomeSearch";
 import { HomeStatsGrid } from "@/components/home/HomeStatsGrid";
 import { HomeRecentRecords } from "@/components/home/HomeRecentRecords";
-import { getSiteStats } from "@/lib/siteStats";
+import { getSiteStats, formatLastSynced } from "@/lib/siteStats";
 import { SITE_NAME } from "@/lib/site";
 
 export async function HomePortal() {
   const stats = await getSiteStats();
+  const lastSynced = stats.source === "mysql" ? formatLastSynced(stats.lastSyncedAt) : null;
 
   return (
     <div className="bg-slate-50">
@@ -38,7 +39,10 @@ export async function HomePortal() {
           <div className="flex items-baseline justify-between gap-4 mb-4">
             <h2 className="text-sm font-semibold text-slate-900">Database overview</h2>
             {stats.source === "mysql" && (
-              <span className="text-xs text-slate-400">Live from elephant.se sync</span>
+              <span className="text-xs text-slate-400">
+                Live from elephant.se
+                {lastSynced ? ` · last synced ${lastSynced}` : null}
+              </span>
             )}
           </div>
           <HomeStatsGrid stats={stats} />

@@ -14,7 +14,8 @@
     "sync:all": "tsx scripts/sync-elephant-se/sync.ts --all",
     "import:enp": "tsx scripts/import-sanctuaries.ts enp",
     "import:sanctuaries": "tsx scripts/import-sanctuaries.ts",
-    "generate:map-paths": "tsx scripts/generate-map-paths.ts"
+    "generate:map-paths": "tsx scripts/generate-map-paths.ts",
+    "sync:cron": "npm run sync:migrate && npm run sync:elephants"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

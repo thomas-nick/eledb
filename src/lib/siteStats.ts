@@ -40,3 +40,14 @@ export async function getSiteStats(): Promise<SiteStats & { source: "mysql" | "l
 export function formatStat(n: number): string {
   return n.toLocaleString("en-US");
 }
+
+export function formatLastSynced(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}

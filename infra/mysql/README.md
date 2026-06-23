@@ -24,13 +24,11 @@ Elephant records sync into your existing Hostinger Business MySQL database.
 
 ## Weekly GitHub Action
 
-`.github/workflows/sync-elephants.yml` runs every **Sunday 03:00 UTC** (and on manual dispatch).
+`.github/workflows/sync-elephants.yml` is **manual-only** (workflow_dispatch). GitHub’s cloud runners are often blocked or rate-limited by elephant.se — use Hostinger cron instead.
 
-It migrates schema, then runs the worldwide crawl for up to ~5.5 hours per run. A cached checkpoint lets each weekly run **resume** until the full ID range is done, then **auto-restarts** a fresh refresh on the next run.
+### Repository secrets (optional fallback)
 
-### Repository secrets
-
-Settings → Secrets and variables → Actions:
+Settings → Secrets and variables → Actions — only needed if you run the manual GitHub workflow.
 
 | Secret | Example |
 |--------|---------|
@@ -40,9 +38,55 @@ Settings → Secrets and variables → Actions:
 | `MYSQL_USER` | `u196551923_asianele` |
 | `MYSQL_PASSWORD` | *(from hPanel)* |
 
-### Manual run
+## Hostinger cron (recommended)
 
-Actions → **Sync elephant.se → MySQL** → Run workflow. Check **Reset checkpoint** to start from ID 1.
+Run sync **on the server** where MySQL is local and elephant.se is reachable.
+
+1. **SSH** into Hostinger (`hPanel` → Advanced → SSH Access).
+2. Find your Node app root (`hPanel` → Websites → mahoot.xyz → **Node.js** → application root). Often:
+   `~/domains/mahoot.xyz` or a `nodejs` subdirectory.
+3. Ensure `.env.production` exists in that directory (bundled with deploy).
+4. Create a log directory:
+   ```bash
+   mkdir -p ~/logs
+   ```
+5. Make the cron script executable (after deploy):
+   ```bash
+   chmod +x ~/domains/mahoot.xyz/scripts/hostinger-cron.sh
+   ```
+6. Edit crontab:
+   ```bash
+   crontab -e
+   ```
+   Add:
+   ```cron
+   # Quick RSS refresh — Sundays 04:00 UTC
+   0 4 * * 0 MAHOOT_APP_DIR=$HOME/domains/mahoot.xyz $HOME/domains/mahoot.xyz/scripts/hostinger-cron.sh quick >> $HOME/logs/mahoot-sync.log 2>&1
+
+   # Full ID crawl — first Sunday of month 05:00 UTC (resumable, up to 6h)
+   0 5 1-7 * 0 MAHOOT_APP_DIR=$HOME/domains/mahoot.xyz $HOME/domains/mahoot.xyz/scripts/hostinger-cron.sh full >> $HOME/logs/mahoot-sync.log 2>&1
+   ```
+   Adjust `MAHOOT_APP_DIR` if your Node root differs.
+
+7. **Test manually once:**
+   ```bash
+   MAHOOT_APP_DIR=$HOME/domains/mahoot.xyz $HOME/domains/mahoot.xyz/scripts/hostinger-cron.sh quick
+   ```
+   Expect `RSS/seed sync: imported N record(s)` and a non-zero exit if elephant.se is unreachable.
+
+### npm shortcuts
+
+| Command | Use |
+|---------|-----|
+| `npm run sync:cron` | migrate + quick RSS sync (same as cron `quick`) |
+| `npm run sync:elephants` | RSS + seed locations only |
+| `npm run sync:all` | Full worldwide ID crawl (resumable) |
+
+Sync scripts **exit with code 1** if MySQL is configured but zero records were imported (after ≥10 attempts).
+
+## Weekly GitHub Action (legacy)
+
+Actions → **Sync elephant.se → MySQL** → Run workflow. Choose **quick** (RSS) or **full** (worldwide crawl). Prefer Hostinger cron for production.
 
 ## Local dev
 

@@ -1,13 +1,20 @@
 name: Sync elephant.se → MySQL
 
+# Primary sync runs on Hostinger via scripts/hostinger-cron.sh (see infra/mysql/README.md).
+# This workflow is a manual fallback only — GitHub runners are often blocked by elephant.se.
+
 on:
-  schedule:
-    # Sundays 03:00 UTC — worldwide Asian elephant catalog refresh
-    - cron: "0 3 * * 0"
   workflow_dispatch:
     inputs:
+      mode:
+        description: Sync mode
+        type: choice
+        options:
+          - quick
+          - full
+        default: quick
       reset:
-        description: Reset checkpoint and start crawl from ID 1
+        description: Reset full-crawl checkpoint (full mode only)
         type: boolean
         default: false
 
@@ -29,6 +36,7 @@ jobs:
           cache: npm
 
       - name: Restore crawl checkpoint
+        if: inputs.mode == 'full'
         uses: actions/cache@v4
         with:
           path: scripts/sync-elephant-se/.checkpoint.json
@@ -47,7 +55,19 @@ jobs:
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
         run: npm run sync:migrate
 
+      - name: Quick RSS + seed sync
+        if: inputs.mode == 'quick'
+        env:
+          MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
+          MYSQL_PORT: ${{ secrets.MYSQL_PORT }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          SYNC_DELAY_MS: "3000"
+        run: npm run sync:elephants
+
       - name: Worldwide Asian elephant crawl
+        if: inputs.mode == 'full'
         env:
           MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
           MYSQL_PORT: ${{ secrets.MYSQL_PORT }}
@@ -56,19 +76,18 @@ jobs:
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
           SYNC_MAX_ID: "18500"
           SYNC_BATCH_SIZE: "50"
-          SYNC_DELAY_MS: "1200"
-          # Stop ~25 min before job timeout so checkpoint cache can save
+          SYNC_DELAY_MS: "3000"
           SYNC_MAX_RUNTIME_MS: "19800000"
         run: |
           ARGS=""
-          if [ "${{ github.event.inputs.reset }}" = "true" ]; then
+          if [ "${{ inputs.reset }}" = "true" ]; then
             ARGS="--reset"
           fi
           npm run sync:all -- $ARGS
 
       - name: Save crawl checkpoint
+        if: always() && inputs.mode == 'full'
         uses: actions/cache/save@v4
-        if: always()
         with:
           path: scripts/sync-elephant-se/.checkpoint.json
           key: elephant-sync-checkpoint-v1

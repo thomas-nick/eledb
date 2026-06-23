@@ -715,6 +715,7 @@ export interface SiteStats {
   living: number;
   campCount: number;
   countryCount: number;
+  lastSyncedAt?: string | null;
 }
 
 export async function getSiteStatsMysql(): Promise<SiteStats> {
@@ -725,7 +726,8 @@ export async function getSiteStatsMysql(): Promise<SiteStats> {
        SUM(status = 'living') AS living,
        SUM(name != 'unknown' AND TRIM(name) != '' AND LOWER(TRIM(name)) != 'unnamed') AS named,
        COUNT(DISTINCT CASE WHEN location_id IS NOT NULL AND location_id != '' THEN location_id END) AS camp_count,
-       COUNT(DISTINCT country) AS country_count
+       COUNT(DISTINCT country) AS country_count,
+       MAX(synced_at) AS last_synced_at
      FROM elephants`
   );
   const row = rows[0];
@@ -735,6 +737,9 @@ export async function getSiteStatsMysql(): Promise<SiteStats> {
     named: Number(row?.named ?? 0),
     campCount: Number(row?.camp_count ?? 0),
     countryCount: Number(row?.country_count ?? 0),
+    lastSyncedAt: row?.last_synced_at
+      ? new Date(row.last_synced_at as string | Date).toISOString()
+      : null,
   };
 }
 

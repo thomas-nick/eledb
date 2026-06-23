@@ -11,6 +11,12 @@ const BATCH_SIZE = Number(process.env.SYNC_BATCH_SIZE ?? 50);
 const RETRY_COUNT = 3;
 const SEED_SAMPLE_SIZE = 100;
 
+export interface CrawlRunResult {
+  checkpoint: CrawlCheckpoint;
+  syncedThisRun: number;
+  idsTriedThisRun: number;
+}
+
 export interface CrawlCheckpoint {
   lastId: number;
   maxId: number;
@@ -87,6 +93,8 @@ export async function runWorldwideCrawl(options: {
   const startId = checkpoint.lastId + 1;
   const batch: ElephantRecord[] = [];
   const seedSample: ElephantRecord[] = [];
+  let syncedThisRun = 0;
+  let idsTriedThisRun = 0;
 
   console.log(
     `Worldwide Asian elephant crawl: IDs ${startId}–${maxId} (checkpoint: ${checkpoint.asianCount} Asian so far)`
@@ -94,6 +102,7 @@ export async function runWorldwideCrawl(options: {
 
   try {
     for (let id = startId; id <= maxId; id++) {
+      idsTriedThisRun++;
       if (maxRuntimeMs > 0 && Date.now() - crawlStartedAt >= maxRuntimeMs) {
         console.log(`\nStopping at ID ${id - 1} (SYNC_MAX_RUNTIME_MS reached)`);
         break;
@@ -123,6 +132,7 @@ export async function runWorldwideCrawl(options: {
 
       batch.push(parsed);
       checkpoint.asianCount++;
+      syncedThisRun++;
       if (seedSample.length < SEED_SAMPLE_SIZE) seedSample.push(parsed);
 
       if (batch.length >= BATCH_SIZE) {
@@ -149,5 +159,5 @@ export async function runWorldwideCrawl(options: {
   writeFileSync(seedPath, JSON.stringify(seedSample, null, 2));
   console.log(`Wrote ${seedSample.length} sample records → ${seedPath}`);
 
-  return checkpoint;
+  return { checkpoint, syncedThisRun, idsTriedThisRun };
 }

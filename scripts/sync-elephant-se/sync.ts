@@ -23,6 +23,7 @@ import { migrateEnrichmentSchema } from "../../src/lib/elephant-enrichment-db";
 import { migrateContributionSchema } from "../../src/lib/contribution-db";
 import type { ElephantRecord } from "../../src/types/elephant";
 import { runWorldwideCrawl } from "./crawl";
+import { failIfNoSync } from "./assert-sync";
 import { discoverThailandElephantIds, fetchText } from "./discover";
 import {
   extractElephantIdsFromHtml,
@@ -40,9 +41,10 @@ import {
 } from "./types";
 
 config({ path: resolve(process.cwd(), ".env.local") });
+config({ path: resolve(process.cwd(), ".env.production") });
 config({ path: resolve(process.cwd(), ".env") });
 
-const REQUEST_DELAY_MS = Number(process.env.SYNC_DELAY_MS ?? 1200);
+const REQUEST_DELAY_MS = Number(process.env.SYNC_DELAY_MS ?? 2000);
 const MAX_RECORDS = Number(process.env.SYNC_MAX_RECORDS ?? 200);
 const THAILAND_MAX_RECORDS = Number(process.env.SYNC_THAILAND_MAX_RECORDS ?? 0);
 const THAILAND_MAX_LOCATIONS = Number(process.env.SYNC_THAILAND_MAX_LOCATIONS ?? 0);
@@ -208,6 +210,10 @@ async function runSync() {
   } else {
     console.log("MySQL not configured — seed file only (set MYSQL_* in .env.local)");
   }
+
+  if (mysql) {
+    failIfNoSync(records.length, ids.length, "RSS/seed sync");
+  }
 }
 
 async function runInit() {
@@ -235,19 +241,25 @@ async function runAll() {
     throw new Error("Set MYSQL_HOST, MYSQL_USER, MYSQL_DATABASE (and password) in .env.local");
   }
   await migrateElephantSchema();
-  await runWorldwideCrawl({
+  const result = await runWorldwideCrawl({
     delayMs: REQUEST_DELAY_MS,
     reset: hasFlag("--reset"),
   });
+  failIfNoSync(result.syncedThisRun, result.idsTriedThisRun, "Worldwide crawl");
+}
+
+function onSyncError(err: unknown) {
+  console.error(err);
+  process.exit(1);
 }
 
 const cmd = process.argv[2];
 if (cmd === "init") {
-  runInit().catch(console.error);
+  runInit().catch(onSyncError);
 } else if (cmd === "migrate") {
-  runMigrate().catch(console.error);
+  runMigrate().catch(onSyncError);
 } else if (hasFlag("--all")) {
-  runAll().catch(console.error);
+  runAll().catch(onSyncError);
 } else {
-  runSync().catch(console.error);
+  runSync().catch(onSyncError);
 }
