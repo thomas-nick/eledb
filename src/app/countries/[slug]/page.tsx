@@ -26,10 +26,10 @@ export async function generateMetadata({ params }: CountryPageProps) {
   const data = await getCountryPageData(slug);
   if (!data) return { title: "Country not found" };
   return {
-    title: `${data.meta.title} — Asian Elephants`,
+    title: data.meta.title,
     description: data.meta.overview,
     openGraph: {
-      title: `${data.meta.title} — Asian Elephant Database`,
+      title: `${data.meta.title} | mahoot`,
       description: data.meta.tagline,
       ...(data.meta.heroImage && { images: [{ url: data.meta.heroImage }] }),
     },

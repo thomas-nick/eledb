@@ -5,6 +5,8 @@ export const SITE_URL = (
   "https://mahoot.xyz"
 ).replace(/\/$/, "");
 
+export const SITE_NAME = "mahoot";
+
 export function absoluteUrl(path: string): string {
   return `${SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }

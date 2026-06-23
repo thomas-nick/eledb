@@ -59,3 +59,13 @@ h4 {
   border: 1px solid var(--border);
   box-shadow: none;
 }
+
+.home-portal-hero {
+  background: linear-gradient(
+    165deg,
+    color-mix(in oklab, var(--clay-light) 40%, transparent) 0%,
+    color-mix(in oklab, var(--clay-light) 22%, transparent) 40%,
+    color-mix(in oklab, var(--sage) 12%, transparent) 70%,
+    var(--ivory) 100%
+  );
+}

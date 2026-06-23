@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { AuthHeaderActions } from "@/components/auth/AuthHeaderActions";
 import { cn } from "@/lib/utils";
+import { SITE_NAME } from "@/lib/site";
 
 const navLinks = [
   { href: "/sanctuaries", label: "Sanctuaries" },
@@ -27,8 +28,8 @@ export function Header() {
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <span className="font-serif text-xl font-bold text-forest">
-              Asian Elephant
+            <span className="font-serif text-xl font-bold text-forest tracking-tight">
+              {SITE_NAME}
             </span>
           </Link>
 

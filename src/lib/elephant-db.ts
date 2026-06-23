@@ -709,6 +709,35 @@ export interface CountryDbStats {
   campCount: number;
 }
 
+export interface SiteStats {
+  total: number;
+  named: number;
+  living: number;
+  campCount: number;
+  countryCount: number;
+}
+
+export async function getSiteStatsMysql(): Promise<SiteStats> {
+  const db = getMysqlPool();
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT
+       COUNT(*) AS total,
+       SUM(status = 'living') AS living,
+       SUM(name != 'unknown' AND TRIM(name) != '' AND LOWER(TRIM(name)) != 'unnamed') AS named,
+       COUNT(DISTINCT CASE WHEN location_id IS NOT NULL AND location_id != '' THEN location_id END) AS camp_count,
+       COUNT(DISTINCT country) AS country_count
+     FROM elephants`
+  );
+  const row = rows[0];
+  return {
+    total: Number(row?.total ?? 0),
+    living: Number(row?.living ?? 0),
+    named: Number(row?.named ?? 0),
+    campCount: Number(row?.camp_count ?? 0),
+    countryCount: Number(row?.country_count ?? 0),
+  };
+}
+
 export async function getCountryStatsMysql(dbCountry: string): Promise<CountryDbStats> {
   const db = getMysqlPool();
   const [statRows] = await db.query<RowDataPacket[]>(

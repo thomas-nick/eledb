@@ -9,7 +9,7 @@ import { articles, categoryLabels } from "@/data/articles";
 import { hotspots } from "@/data/hotspots";
 import { getCountrySlugFromDbName } from "@/data/countryMeta";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { absoluteUrl } from "@/lib/site";
+import { absoluteUrl, SITE_NAME } from "@/lib/site";
 
 interface ArticlePageProps {
   params: Promise<{ slug: string }>;
@@ -50,7 +50,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     author: { "@type": "Person", name: article.author },
     publisher: {
       "@type": "Organization",
-      name: "Asian Elephant",
+      name: SITE_NAME,
       url: absoluteUrl("/"),
     },
     mainEntityOfPage: {

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
+import { SITE_NAME } from "@/lib/site";
 
 const footerLinks = {
   Explore: [
@@ -23,7 +24,7 @@ export function Footer() {
       <Container className="py-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           <div className="md:col-span-2">
-            <h3 className="font-serif text-2xl font-bold mb-4">Asian Elephant</h3>
+            <h3 className="font-serif text-2xl font-bold mb-4 tracking-tight">{SITE_NAME}</h3>
             <p className="text-ivory/70 max-w-md leading-relaxed">
               A resource for people who love Asian elephants — where to visit, 
               what to know about mahout culture, wild corridors, and field notes 
@@ -54,7 +55,7 @@ export function Footer() {
 
         <div className="mt-12 pt-8 border-t border-ivory/10 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-ivory/50 text-sm">
-            &copy; {new Date().getFullYear()} Asian Elephant. All rights reserved.
+            &copy; {new Date().getFullYear()} {SITE_NAME}. All rights reserved.
           </p>
           <p className="text-ivory/50 text-sm">
             Revered across Asia. Respected in context.

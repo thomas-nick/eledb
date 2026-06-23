@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: CampPageProps) {
   const location = await getLocation(locationId);
   if (!location) return { title: "Camp not found" };
   return {
-    title: `${location.displayName} — Asian Elephant`,
+    title: location.displayName,
     description: `${location.elephantCount} Asian elephant records at ${location.name}, ${location.country}.`,
   };
 }

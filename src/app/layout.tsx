@@ -4,7 +4,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { AuthSessionProvider } from "@/components/providers/AuthSessionProvider";
 import { Analytics } from "@/components/analytics/Analytics";
-import { SITE_URL } from "@/lib/site";
+import { SITE_URL, SITE_NAME } from "@/lib/site";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -22,8 +22,8 @@ const sourceSans = Source_Sans_3({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Asian Elephant",
-    template: "%s | Asian Elephant",
+    default: SITE_NAME,
+    template: `%s | ${SITE_NAME}`,
   },
   description:
     "A resource for people who love Asian elephants — sanctuaries, wild corridors, field notes, and travel planning across Thailand, Cambodia, and 13 range states.",

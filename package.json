@@ -13,7 +13,8 @@
     "sync:thailand": "tsx scripts/sync-elephant-se/sync.ts --thailand",
     "sync:all": "tsx scripts/sync-elephant-se/sync.ts --all",
     "import:enp": "tsx scripts/import-sanctuaries.ts enp",
-    "import:sanctuaries": "tsx scripts/import-sanctuaries.ts"
+    "import:sanctuaries": "tsx scripts/import-sanctuaries.ts",
+    "generate:map-paths": "tsx scripts/generate-map-paths.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

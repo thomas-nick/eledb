@@ -1,30 +1,24 @@
-import { Hero } from "@/components/home/Hero";
-import { StatsSection } from "@/components/home/StatsSection";
-import { PillarCards } from "@/components/home/PillarCards";
-import { DatabaseCTA } from "@/components/home/DatabaseCTA";
+import { HomePortal } from "@/components/home/HomePortal";
 import { DonateCTA } from "@/components/home/DonateCTA";
 import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import Link from "next/link";
-import { articles } from "@/data/articles";
+import { articles, categoryLabels } from "@/data/articles";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { categoryLabels } from "@/data/articles";
-import Image from "next/image";
+
+export const dynamic = "force-dynamic";
 
 export default function HomePage() {
   const latestArticles = articles.slice(0, 3);
 
   return (
     <>
-      <Hero />
-      <StatsSection />
-      <DatabaseCTA />
-      <PillarCards />
+      <HomePortal />
 
-      <section className="py-24">
-        <Container>
-          <div className="flex items-end justify-between mb-12">
+      <section className="py-12 md:py-16 bg-white border-t border-slate-200">
+        <Container size="wide">
+          <div className="flex items-end justify-between mb-8">
             <SectionHeading
               eyebrow="From the Field"
               title="Latest Resources"
@@ -38,30 +32,20 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {latestArticles.map((article) => (
               <Link key={article.slug} href={`/resources/${article.slug}`} className="group">
-                <Card hover className="h-full p-0 overflow-hidden">
-                  <div className="relative h-48 overflow-hidden">
-                    <Image
-                      src={article.image}
-                      alt={article.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                      sizes="(max-width: 768px) 100vw, 33vw"
-                    />
-                  </div>
-                  <div className="p-6">
-                    <Badge variant="info" className="mb-3">
-                      {categoryLabels[article.category]}
-                    </Badge>
-                    <h3 className="font-serif text-xl font-bold text-forest group-hover:text-clay transition-colors line-clamp-2">
-                      {article.title}
-                    </h3>
-                    <p className="mt-2 text-sm text-muted line-clamp-2">
-                      {article.excerpt}
-                    </p>
-                  </div>
+                <Card hover className="h-full p-5 border-slate-200">
+                  <Badge variant="info" className="mb-3">
+                    {categoryLabels[article.category]}
+                  </Badge>
+                  <h3 className="font-serif text-lg font-bold text-forest group-hover:text-clay transition-colors line-clamp-2">
+                    {article.title}
+                  </h3>
+                  <p className="mt-2 text-sm text-muted line-clamp-3">{article.excerpt}</p>
+                  <p className="mt-3 text-xs text-slate-400">
+                    {article.readTime} min read
+                  </p>
                 </Card>
               </Link>
             ))}

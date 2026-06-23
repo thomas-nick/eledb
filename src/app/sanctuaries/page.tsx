@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Container } from "@/components/ui/Container";
-import { SectionHeading } from "@/components/ui/SectionHeading";
+import { ExplorePageHeader } from "@/components/layout/ExplorePageHeader";
 import { SanctuaryCard } from "@/components/sanctuaries/SanctuaryCard";
 import { CountryChips } from "@/components/sanctuaries/CountryChips";
 import { ExperienceFinder } from "@/components/tools/ExperienceFinder";
@@ -74,28 +74,26 @@ export default function SanctuariesPage() {
   }, [search, experienceFilter, countryFilter, sourceFilter]);
 
   return (
-    <>
-      <section className="py-16 md:py-24 bg-forest text-ivory">
-        <Container>
-          <SectionHeading
-            eyebrow="Directory"
-            title="Elephant Camps & Sanctuaries"
-            description={`${sanctuaries.length} places across ${countries.length} countries — a curated directory for planning your trip. We don't tell you what's right; we help you find what fits, with welfare tags and external assessments if you want them.`}
-          />
-        </Container>
-      </section>
+    <div className="bg-slate-50 min-h-screen">
+      <ExplorePageHeader
+        eyebrow="Directory"
+        title="Elephant Camps & Sanctuaries"
+        description={`${sanctuaries.length} places across ${countries.length} countries — a curated directory for planning your trip. We don't tell you what's right; we help you find what fits, with welfare tags and external assessments if you want them.`}
+      />
 
-      <section className="py-8 bg-sage/10 border-b border-border">
-        <Container>
-          <p className="text-sm text-muted leading-relaxed max-w-3xl">
-            In Thailand, elephants are revered — sacred in royal tradition, woven into Buddhist culture, and cared for by mahout families who often know one animal for decades. 
-            This directory honors that context. Welfare criteria from groups like WAP and ACES are included as <em>reference tags</em>, not verdicts. 
-            Many camps operate on thin margins; feeding and bathing tourists join is often how elephants get fed.
+      <section className="py-6 border-b border-slate-200 bg-white">
+        <Container size="wide">
+          <p className="text-sm text-slate-600 leading-relaxed max-w-3xl">
+            In Thailand, elephants are revered — sacred in royal tradition, woven into Buddhist
+            culture, and cared for by mahout families who often know one animal for decades. This
+            directory honors that context. Welfare criteria from groups like WAP and ACES are
+            included as <em>reference tags</em>, not verdicts. Many camps operate on thin margins;
+            feeding and bathing tourists join is often how elephants get fed.
           </p>
         </Container>
       </section>
 
-      <section className="py-16 md:py-24">
+      <section className="py-8 md:py-10">
         <Container size="wide">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
@@ -336,8 +334,8 @@ export default function SanctuariesPage() {
         </Container>
       </section>
 
-      <section className="py-16 bg-forest/5 border-t border-border">
-        <Container>
+      <section className="py-10 border-t border-slate-200 bg-white">
+        <Container size="wide">
           <h3 className="font-serif text-2xl font-bold text-forest mb-2">
             Individual Elephant Records
           </h3>
@@ -380,8 +378,8 @@ export default function SanctuariesPage() {
         </Container>
       </section>
 
-      <section className="py-16 bg-sage/10 border-t border-border">
-        <Container>
+      <section className="py-10 border-t border-slate-200">
+        <Container size="wide">
           <h3 className="font-serif text-2xl font-bold text-forest mb-2">
             External Welfare Assessments
           </h3>
@@ -389,9 +387,9 @@ export default function SanctuariesPage() {
             These independent frameworks are useful if hands-off tourism matters to you. 
             They are one perspective — not the only one. Policies change; verify with the camp directly.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {dataSources.map((source) => (
-              <Card key={source.id}>
+              <Card key={source.id} className="border-slate-200 bg-white">
                 <h4 className="font-semibold text-forest mb-1">{source.name}</h4>
                 <p className="text-xs text-muted mb-3">Synced: {source.lastSynced}</p>
                 <p className="text-sm text-muted leading-relaxed mb-4">{source.description}</p>
@@ -408,6 +406,6 @@ export default function SanctuariesPage() {
           </div>
         </Container>
       </section>
-    </>
+    </div>
   );
 }
