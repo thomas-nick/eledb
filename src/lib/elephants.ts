@@ -7,6 +7,7 @@ import {
   searchElephantsMysql,
 } from "@/lib/elephant-db";
 import { enrichSearchResults } from "@/lib/elephantEnrichments";
+import { applyElephantOverride, getElephantOverride } from "@/lib/contribution-db";
 import type {
   ElephantRecord,
   ElephantSearchParams,
@@ -107,25 +108,42 @@ export async function searchElephants(
   params: ElephantSearchParams
 ): Promise<ElephantSearchResult> {
   if (isMysqlConfigured()) {
-    const result = await searchElephantsMysql(params);
-    return {
-      ...result,
-      elephants: await enrichSearchResults(result.elephants),
-    };
+    try {
+      const result = await searchElephantsMysql(params);
+      return {
+        ...result,
+        elephants: await enrichSearchResults(result.elephants),
+      };
+    } catch {
+      return searchLocal(params);
+    }
   }
   return searchLocal(params);
 }
 
 export async function getElephantById(id: string): Promise<ElephantRecord | null> {
+  let record: ElephantRecord | null = null;
+
   if (isMysqlConfigured()) {
     try {
-      const record = await getElephantByIdMysql(id);
-      if (record) return record;
+      record = await getElephantByIdMysql(id);
     } catch {
-      // fall through
+      record = null;
     }
   }
-  return seedElephants.find((e) => e.id === id) ?? null;
+
+  if (!record) {
+    record = seedElephants.find((e) => e.id === id) ?? null;
+  }
+
+  if (!record) return null;
+
+  if (isMysqlConfigured()) {
+    const override = await getElephantOverride(id);
+    return applyElephantOverride(record, override);
+  }
+
+  return record;
 }
 
 export async function getOffspring(id: string): Promise<ElephantRecord[]> {

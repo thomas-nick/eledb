@@ -47,3 +47,15 @@ h4 {
   background: var(--clay-light);
   color: var(--forest);
 }
+
+.leaflet-container {
+  font-family: inherit;
+  z-index: 0;
+}
+
+.leaflet-tooltip {
+  font-size: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  box-shadow: none;
+}

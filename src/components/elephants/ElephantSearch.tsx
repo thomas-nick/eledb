@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { ElephantCard } from "@/components/elephants/ElephantCard";
@@ -15,6 +16,7 @@ import type {
 } from "@/types/elephant";
 import type { LocationSummary } from "@/types/location";
 import { cn } from "@/lib/utils";
+import { getCountrySlugFromDbName } from "@/data/countryMeta";
 
 const statusOptions: { value: ElephantStatus | "all"; label: string }[] = [
   { value: "all", label: "All" },
@@ -49,6 +51,13 @@ const rangeCountries = [
 const suggestedCamps = [
   { id: "174", name: "Elephant Nature Park", country: "Thailand" },
   { id: "2627", name: "Wildlife SOS", country: "India" },
+];
+
+const exploreLinks = [
+  { href: "/countries", label: "Countries" },
+  { href: "/camps", label: "Camps" },
+  { href: "/coexistence", label: "Range map" },
+  { href: "/corridors", label: "Corridors" },
 ];
 
 export function ElephantSearch() {
@@ -125,6 +134,20 @@ export function ElephantSearch() {
   }, [pathname, router]);
 
   useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) {
+        return;
+      }
+      e.preventDefault();
+      document.getElementById("elephant-search-input")?.focus();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  useEffect(() => {
     setQuery(searchParams.get("q") ?? "");
   }, [searchParams]);
 
@@ -188,23 +211,29 @@ export function ElephantSearch() {
   const totalPages = result ? Math.ceil(result.total / result.perPage) : 0;
   const activeFilterCount = activeFilters.length;
 
+  const topCountries = useMemo(() => {
+    if (countries.length > 0) return countries.slice(0, 9);
+    return rangeCountries.map((value) => ({ value, count: 0 }));
+  }, [countries]);
+
+  const featuredCamps = useMemo(() => {
+    const seen = new Set<string>();
+    const list: { id: string; name: string; country?: string }[] = [];
+    for (const camp of suggestedCamps) {
+      if (seen.has(camp.id)) continue;
+      seen.add(camp.id);
+      list.push(camp);
+    }
+    for (const camp of campChips) {
+      if (seen.has(camp.id) || list.length >= 5) continue;
+      seen.add(camp.id);
+      list.push({ id: camp.id, name: camp.displayName, country: camp.country });
+    }
+    return list;
+  }, [campChips]);
+
   return (
     <div className="bg-slate-50 min-h-screen">
-      <section className="bg-white border-b border-slate-200">
-        <Container size="wide" className="py-8 md:py-10">
-          <p className="text-xs font-semibold uppercase tracking-widest text-forest mb-2">
-            Database
-          </p>
-          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-slate-900">
-            Asian Elephant Records
-          </h1>
-          <p className="mt-1.5 text-sm text-slate-500 max-w-2xl">
-            Individual records from elephant.se — births, transfers, parentage, chip IDs, and camp
-            history across 13 range countries and zoos worldwide.
-          </p>
-        </Container>
-      </section>
-
       <section className="sticky top-16 z-20 border-b border-slate-200 bg-white/95 backdrop-blur-sm">
         <Container size="wide" className="py-3">
           <div className="flex flex-col sm:flex-row gap-2.5">
@@ -224,6 +253,7 @@ export function ElephantSearch() {
                 />
               </svg>
               <input
+                id="elephant-search-input"
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -288,6 +318,132 @@ export function ElephantSearch() {
               </button>
             </div>
           )}
+
+          <div className="mt-3 pt-3 border-t border-slate-100 space-y-2.5">
+            <QuickBrowseRow label="Countries">
+              <FilterChip active={!country} onClick={() => updateParams({ country: null })}>
+                All
+              </FilterChip>
+              {topCountries.map((c) => {
+                const slug = getCountrySlugFromDbName(c.value);
+                if (slug) {
+                  return (
+                    <Link
+                      key={c.value}
+                      href={`/countries/${slug}`}
+                      className={cn(
+                        "inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[13px] font-medium border transition-colors",
+                        country === c.value
+                          ? "border-forest bg-forest text-white"
+                          : "border-slate-300 bg-white text-slate-600 hover:border-slate-400 hover:text-slate-900"
+                      )}
+                    >
+                      {c.value}
+                      {c.count > 0 && (
+                        <span className="opacity-60 tabular-nums">{c.count.toLocaleString()}</span>
+                      )}
+                    </Link>
+                  );
+                }
+                return (
+                  <FilterChip
+                    key={c.value}
+                    active={country === c.value}
+                    onClick={() =>
+                      updateParams({ country: country === c.value ? null : c.value })
+                    }
+                  >
+                    {c.value}
+                    {c.count > 0 && (
+                      <span className="opacity-60 tabular-nums">{c.count.toLocaleString()}</span>
+                    )}
+                  </FilterChip>
+                );
+              })}
+              <Link
+                href="/countries"
+                className="inline-flex items-center px-2.5 py-1 rounded-md text-[13px] font-medium text-forest hover:text-forest-light"
+              >
+                All range states →
+              </Link>
+            </QuickBrowseRow>
+
+            <QuickBrowseRow label="Quick">
+              <FilterChip
+                active={status === "living"}
+                onClick={() => updateParams({ status: status === "living" ? null : "living" })}
+              >
+                Living
+              </FilterChip>
+              <FilterChip
+                active={sex === "female"}
+                onClick={() => updateParams({ sex: sex === "female" ? null : "female" })}
+              >
+                Female
+              </FilterChip>
+              <FilterChip
+                active={sex === "male"}
+                onClick={() => updateParams({ sex: sex === "male" ? null : "male" })}
+              >
+                Male
+              </FilterChip>
+              <FilterChip
+                active={hasStory}
+                onClick={() => updateParams({ hasStory: hasStory ? null : "true" })}
+              >
+                Has story
+              </FilterChip>
+              <FilterChip
+                active={category === "camp"}
+                onClick={() => updateParams({ category: category === "camp" ? null : "camp" })}
+              >
+                In camps
+              </FilterChip>
+            </QuickBrowseRow>
+
+            {!locationId && featuredCamps.length > 0 && (
+              <QuickBrowseRow label="Camps">
+                {featuredCamps.map((camp) => (
+                  <FilterChip
+                    key={camp.id}
+                    active={locationId === camp.id}
+                    onClick={() =>
+                      updateParams({
+                        locationId: camp.id,
+                        locationName: camp.name,
+                        category: "camp",
+                        country: camp.country ?? country ?? null,
+                      })
+                    }
+                  >
+                    {camp.name}
+                  </FilterChip>
+                ))}
+                <Link
+                  href={`/camps${country ? `?country=${encodeURIComponent(country)}` : ""}`}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[13px] font-medium border border-dashed border-slate-300 text-forest hover:border-forest hover:bg-forest/5 transition-colors"
+                >
+                  All camps
+                  <span aria-hidden>→</span>
+                </Link>
+              </QuickBrowseRow>
+            )}
+
+            <QuickBrowseRow label="Explore">
+              {exploreLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[13px] font-medium border border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:text-slate-900 transition-colors"
+                >
+                  {link.label}
+                  <span className="text-slate-400" aria-hidden>
+                    →
+                  </span>
+                </Link>
+              ))}
+            </QuickBrowseRow>
+          </div>
         </Container>
       </section>
 
@@ -569,6 +725,17 @@ export function ElephantSearch() {
           </div>
         </Container>
       </section>
+    </div>
+  );
+}
+
+function QuickBrowseRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+      <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 shrink-0 w-16">
+        {label}
+      </span>
+      <div className="flex flex-wrap gap-1.5 items-center min-w-0 flex-1">{children}</div>
     </div>
   );
 }

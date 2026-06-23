@@ -1,5 +1,7 @@
 import type { ElephantPhoto, ElephantRecord } from "@/types/elephant";
 import type { ElephantEnrichment } from "@/types/enrichment";
+import type { CommunityPhoto } from "@/types/contribution";
+import { getCommunityPhotoSummaries } from "@/lib/contribution-db";
 import {
   getEnrichmentByElephantIdMysql,
   getEnrichmentSummariesByElephantIdsMysql,
@@ -11,12 +13,13 @@ function resolvePhotoUrl(url: string): string {
   return url.startsWith("http") ? url : resolveElephantPhotoUrl(url);
 }
 
-/** Best cover photo for a list card: enrichment first, then elephant.se */
+/** Best cover photo for a list card: community -> enrichment -> elephant.se */
 export function resolveCardPhotoUrl(
   elephant: ElephantRecord,
-  enrichmentPhotoUrl?: string
+  enrichmentPhotoUrl?: string,
+  communityPhotoUrl?: string
 ): string | undefined {
-  const raw = enrichmentPhotoUrl ?? elephant.photos?.[0]?.url;
+  const raw = communityPhotoUrl ?? enrichmentPhotoUrl ?? elephant.photos?.[0]?.url;
   return raw ? resolvePhotoUrl(raw) : undefined;
 }
 
@@ -26,12 +29,20 @@ export async function enrichSearchResults(
   if (!elephants.length || !isMysqlConfigured()) return elephants;
 
   const ids = elephants.map((e) => e.id);
-  const summaries = await getEnrichmentSummariesByElephantIdsMysql(ids);
+  const [summaries, community] = await Promise.all([
+    getEnrichmentSummariesByElephantIdsMysql(ids),
+    getCommunityPhotoSummaries(ids),
+  ]);
 
   return elephants.map((elephant) => {
     const summary = summaries.get(elephant.id);
-    const hasEnrichment = Boolean(summary);
-    const photoUrl = resolveCardPhotoUrl(elephant, summary?.photoUrl);
+    const communityPhoto = community.get(elephant.id);
+    const hasEnrichment = Boolean(summary) || Boolean(communityPhoto);
+    const photoUrl = resolveCardPhotoUrl(
+      elephant,
+      summary?.photoUrl,
+      communityPhoto?.url
+    );
     if (!hasEnrichment && !photoUrl) return elephant;
     return { ...elephant, hasEnrichment, photoUrl };
   });
@@ -48,10 +59,11 @@ export async function getElephantEnrichment(
   }
 }
 
-/** Community photos first, then elephant.se — deduped by resolved URL */
+/** Community photos first, then enrichment, then elephant.se — deduped by resolved URL */
 export function mergeProfilePhotos(
   elephantPhotos: ElephantPhoto[] | undefined,
-  enrichment: ElephantEnrichment | null
+  enrichment: ElephantEnrichment | null,
+  communityPhotos?: CommunityPhoto[]
 ): ElephantPhoto[] {
   const seen = new Set<string>();
   const merged: ElephantPhoto[] = [];
@@ -63,6 +75,10 @@ export function mergeProfilePhotos(
     merged.push({ url: resolved, credit });
   };
 
+  for (const p of communityPhotos ?? []) {
+    const credit = p.credit ?? (p.uploaderName ? `Photo by ${p.uploaderName}` : undefined);
+    add(p.url, credit);
+  }
   for (const p of enrichment?.photos ?? []) add(p.url, p.credit);
   for (const p of elephantPhotos ?? []) add(p.url, p.credit);
 

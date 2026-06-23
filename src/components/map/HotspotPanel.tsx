@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { Hotspot } from "@/data/hotspots";
+import { getCountrySlugFromDbName } from "@/data/countryMeta";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
 
 interface HotspotPanelProps {
   hotspot: Hotspot | null;
@@ -26,38 +27,47 @@ const techniqueVariants: Record<Hotspot["techniqueType"], "success" | "info" | "
 export function HotspotPanel({ hotspot, onClose }: HotspotPanelProps) {
   if (!hotspot) {
     return (
-      <div className="bg-card rounded-2xl border border-border p-8 text-center">
-        <div className="text-sage mb-4">
+      <div className="rounded-xl border border-slate-200 bg-white p-8 text-center h-full min-h-[280px] flex flex-col items-center justify-center">
+        <div className="text-slate-300 mb-4">
           <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+            />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+            />
           </svg>
         </div>
-        <h3 className="font-serif text-xl font-bold text-forest mb-2">
-          Select a Hotspot
-        </h3>
-        <p className="text-muted text-sm">
-          Click any orange marker on the map to explore a coexistence success story.
+        <h3 className="text-lg font-semibold text-slate-900 mb-2">Select a hotspot</h3>
+        <p className="text-slate-500 text-sm">
+          Click an orange marker on the map to explore a coexistence story from the field.
         </p>
       </div>
     );
   }
 
+  const countrySlug = getCountrySlugFromDbName(hotspot.country);
+
   return (
-    <div className="bg-card rounded-2xl border border-border p-6 md:p-8">
+    <div className="rounded-xl border border-slate-200 bg-white p-6">
       <div className="flex items-start justify-between mb-4">
         <div>
           <Badge variant={techniqueVariants[hotspot.techniqueType]} className="mb-3">
             {techniqueLabels[hotspot.techniqueType]}
           </Badge>
-          <h3 className="font-serif text-2xl font-bold text-forest">
-            {hotspot.name}
-          </h3>
-          <p className="text-sm text-muted mt-1">{hotspot.country}</p>
+          <h3 className="text-xl font-semibold text-slate-900">{hotspot.name}</h3>
+          <p className="text-sm text-slate-500 mt-1">{hotspot.country}</p>
         </div>
         <button
+          type="button"
           onClick={onClose}
-          className="p-1 text-muted hover:text-forest transition-colors"
+          className="p-1 text-slate-400 hover:text-slate-700 transition-colors"
           aria-label="Close panel"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -68,40 +78,56 @@ export function HotspotPanel({ hotspot, onClose }: HotspotPanelProps) {
 
       <div className="space-y-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-clay mb-1">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">
             Technique
           </p>
-          <p className="text-forest font-medium">{hotspot.technique}</p>
+          <p className="text-slate-900 font-medium">{hotspot.technique}</p>
         </div>
 
-        <p className="text-muted leading-relaxed">{hotspot.description}</p>
+        <p className="text-slate-600 text-sm leading-relaxed">{hotspot.description}</p>
 
-        <div className="bg-sage/10 rounded-xl p-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-sage mb-1">
-            Impact
-          </p>
-          <p className="text-forest font-medium">{hotspot.impact}</p>
+        <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
+          <p className="text-xs font-semibold uppercase tracking-wider text-forest mb-1">Impact</p>
+          <p className="text-slate-900 font-medium text-sm">{hotspot.impact}</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 pt-2">
+        <div className="grid grid-cols-2 gap-4 pt-1">
           <div>
-            <p className="text-2xl font-serif font-bold text-forest">
-              {hotspot.yearStarted}
-            </p>
-            <p className="text-xs text-muted">Year Started</p>
+            <p className="text-xl font-semibold text-slate-900">{hotspot.yearStarted}</p>
+            <p className="text-xs text-slate-500">Year started</p>
           </div>
           <div>
-            <p className="text-2xl font-serif font-bold text-forest">
+            <p className="text-xl font-semibold text-slate-900">
               {hotspot.communitySize.toLocaleString()}
             </p>
-            <p className="text-xs text-muted">People Served</p>
+            <p className="text-xs text-slate-500">People served</p>
           </div>
         </div>
       </div>
 
-      <Button href="/donate" variant="secondary" className="w-full mt-6">
-        Fund This Approach
-      </Button>
+      <div className="flex flex-col gap-2 mt-6">
+        {countrySlug ? (
+          <Link
+            href={`/countries/${countrySlug}`}
+            className="inline-flex justify-center rounded-lg bg-forest px-4 py-2.5 text-sm font-medium text-white hover:bg-forest-light"
+          >
+            {hotspot.country} country hub
+          </Link>
+        ) : (
+          <Link
+            href={`/elephants?country=${encodeURIComponent(hotspot.country)}`}
+            className="inline-flex justify-center rounded-lg bg-forest px-4 py-2.5 text-sm font-medium text-white hover:bg-forest-light"
+          >
+            Elephants in {hotspot.country}
+          </Link>
+        )}
+        <Link
+          href={`/camps?country=${encodeURIComponent(hotspot.country)}`}
+          className="inline-flex justify-center rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:border-forest hover:text-forest"
+        >
+          Camps in {hotspot.country}
+        </Link>
+      </div>
     </div>
   );
 }

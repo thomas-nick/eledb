@@ -2,16 +2,26 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Container } from "@/components/ui/Container";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { ElephantAttribution } from "@/components/elephants/ElephantAttribution";
 import { ElephantDetailPanels } from "@/components/elephants/ElephantDetailPanels";
 import { ElephantEnrichmentStory } from "@/components/elephants/ElephantEnrichmentStory";
 import { ElephantHerdSection } from "@/components/elephants/ElephantHerdSection";
 import { ElephantLineageSection } from "@/components/elephants/ElephantLineageSection";
 import { ElephantPhotoGallery } from "@/components/elephants/ElephantPhotoGallery";
-import { ElephantProfileHero } from "@/components/elephants/ElephantProfileHero";
-import { ElephantQuickStats } from "@/components/elephants/ElephantQuickStats";
 import { ElephantUnnamedBanner } from "@/components/elephants/ElephantUnnamedBanner";
+import { ContributionActivity } from "@/components/elephants/ContributionActivity";
+import { ProfileHeader } from "@/components/elephants/ProfileHeader";
+import { ProfileMetadataStrip } from "@/components/elephants/ProfileMetadataStrip";
+import { ProfileTabs } from "@/components/elephants/ProfileTabs";
+import { RecordCompleteness } from "@/components/elephants/RecordCompleteness";
+import { getCountrySlugFromDbName } from "@/data/countryMeta";
 import { displayElephantName, isUnnamedRecord } from "@/lib/elephantNames";
+import {
+  getCommunityPhotos,
+  computeRecordCompleteness,
+  listContributionsByElephant,
+} from "@/lib/contribution-db";
 import {
   getElephantEnrichment,
   mergeProfilePhotos,
@@ -30,11 +40,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const elephant = await getElephantById(id);
   if (!elephant) return { title: "Elephant not found" };
   const enrichment = await getElephantEnrichment(id);
+  const communityPhotos = await getCommunityPhotos(id);
   const title = displayElephantName(elephant);
   const description =
     enrichment?.teaser ??
     `Asian elephant record for ${title} at ${elephant.locationName}, ${elephant.country}.`;
-  const photos = mergeProfilePhotos(elephant.photos, enrichment);
+  const photos = mergeProfilePhotos(elephant.photos, enrichment, communityPhotos);
   const photo = photos[0];
 
   return {
@@ -61,13 +72,16 @@ export default async function ElephantDetailPage({ params }: PageProps) {
   const elephant = await getElephantById(id);
   if (!elephant) notFound();
 
-  const [offspring, herdMates, father, mother, enrichment] = await Promise.all([
-    getOffspring(id),
-    elephant.locationId ? getHerdMates(elephant.locationId, id) : Promise.resolve([]),
-    elephant.fatherId ? getElephantById(elephant.fatherId) : Promise.resolve(null),
-    elephant.motherId ? getElephantById(elephant.motherId) : Promise.resolve(null),
-    getElephantEnrichment(id),
-  ]);
+  const [offspring, herdMates, father, mother, enrichment, communityPhotos, activity] =
+    await Promise.all([
+      getOffspring(id),
+      elephant.locationId ? getHerdMates(elephant.locationId, id) : Promise.resolve([]),
+      elephant.fatherId ? getElephantById(elephant.fatherId) : Promise.resolve(null),
+      elephant.motherId ? getElephantById(elephant.motherId) : Promise.resolve(null),
+      getElephantEnrichment(id),
+      getCommunityPhotos(id),
+      listContributionsByElephant(id),
+    ]);
 
   const linkedSanctuaryIds = elephant.locationId
     ? getSanctuaryIdsForLocation(elephant.locationId)
@@ -75,67 +89,86 @@ export default async function ElephantDetailPage({ params }: PageProps) {
   const linkedSanctuaries = sanctuaries.filter((s) => linkedSanctuaryIds.includes(s.id));
   const unnamed = isUnnamedRecord(elephant);
   const displayName = displayElephantName(elephant);
-  const namedHerdMateCount = herdMates.filter((m) => !isUnnamedRecord(m)).length;
-  const photos = mergeProfilePhotos(elephant.photos, enrichment);
+  const photos = mergeProfilePhotos(elephant.photos, enrichment, communityPhotos);
+  const completeness = computeRecordCompleteness(elephant);
+
+  const countryHubSlug = getCountrySlugFromDbName(elephant.country);
+  const breadcrumbItems = [
+    { label: "Database", href: "/elephants" },
+    countryHubSlug
+      ? { label: elephant.country, href: `/countries/${countryHubSlug}` }
+      : { label: elephant.country, href: `/elephants?country=${encodeURIComponent(elephant.country)}` },
+    ...(elephant.locationId
+      ? [
+          {
+            label: elephant.locationName,
+            href: `/camps/${elephant.locationId}`,
+          },
+        ]
+      : [{ label: elephant.locationName }]),
+    { label: displayName },
+  ];
 
   return (
-    <>
-      <ElephantProfileHero elephant={elephant} photos={photos} />
+    <div className="bg-slate-50 min-h-screen">
+      <Container size="wide" className="py-6 md:py-8">
+        <Breadcrumb items={breadcrumbItems} />
 
-      <div className="relative z-20 -mt-24 md:-mt-28">
-        <Container size="wide">
-          <ElephantQuickStats
-            elephant={elephant}
-            offspringCount={offspring.length}
-            herdMateCount={herdMates.length}
-            namedHerdMateCount={namedHerdMateCount}
+        <div className="mt-4 space-y-5">
+          <ProfileHeader elephant={elephant} bannerPhoto={photos[0]} />
+          <ProfileMetadataStrip elephant={elephant} />
+          <RecordCompleteness elephant={elephant} {...completeness} />
+        </div>
+
+        <div className="mt-8">
+          <ProfileTabs
+            overview={
+              <div className="space-y-8">
+                {enrichment && <ElephantEnrichmentStory enrichment={enrichment} />}
+                {unnamed && !enrichment && <ElephantUnnamedBanner elephant={elephant} />}
+                <ElephantDetailPanels elephant={elephant} linkedSanctuaries={linkedSanctuaries} />
+              </div>
+            }
+            lineage={
+              <ElephantLineageSection
+                elephant={elephant}
+                father={father}
+                mother={mother}
+                offspring={offspring}
+              />
+            }
+            herd={<ElephantHerdSection elephant={elephant} herdMates={herdMates} />}
+            photos={
+              photos.length > 0 ? (
+                <ElephantPhotoGallery photos={photos} elephantName={displayName} />
+              ) : (
+                <p className="text-sm text-slate-500">No photos yet for this record.</p>
+              )
+            }
+            activity={
+              <ContributionActivity contributions={activity} syncedAt={elephant.syncedAt} />
+            }
           />
-        </Container>
-      </div>
+        </div>
 
-      <section className="py-10 md:py-14">
-        <Container size="wide">
-          {photos.length > 0 && (
-            <ElephantPhotoGallery photos={photos} elephantName={displayName} />
-          )}
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-8 mt-8 border-t border-slate-200">
+          <a
+            href={elephant.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-medium text-forest hover:underline"
+          >
+            Original record on elephant.se
+          </a>
+          <Link href="/elephants" className="text-sm text-slate-500 hover:text-forest">
+            Back to database
+          </Link>
+        </div>
 
-          {enrichment && <ElephantEnrichmentStory enrichment={enrichment} />}
-
-          {unnamed && !enrichment && <ElephantUnnamedBanner elephant={elephant} />}
-
-          <ElephantLineageSection
-            elephant={elephant}
-            father={father}
-            mother={mother}
-            offspring={offspring}
-          />
-
-          <ElephantHerdSection elephant={elephant} herdMates={herdMates} />
-
-          <ElephantDetailPanels elephant={elephant} linkedSanctuaries={linkedSanctuaries} />
-
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-border">
-            <a
-              href={elephant.sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-medium text-clay hover:text-forest transition-colors"
-            >
-              Original record on elephant.se ↗
-            </a>
-            <Link
-              href="/elephants"
-              className="text-sm text-muted hover:text-forest transition-colors"
-            >
-              ← Back to database
-            </Link>
-          </div>
-
-          <div className="mt-8">
-            <ElephantAttribution compact />
-          </div>
-        </Container>
-      </section>
-    </>
+        <div className="mt-8">
+          <ElephantAttribution compact />
+        </div>
+      </Container>
+    </div>
   );
 }

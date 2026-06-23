@@ -3,8 +3,8 @@ export interface Hotspot {
   name: string;
   country: string;
   countryId: string;
-  x: number;
-  y: number;
+  lat: number;
+  lng: number;
   technique: string;
   techniqueType: "bio-fencing" | "early-warning" | "community" | "habitat";
   description: string;
@@ -19,8 +19,8 @@ export const hotspots: Hotspot[] = [
     name: "Assam Beehive Fencing",
     country: "India",
     countryId: "india",
-    x: 248,
-    y: 168,
+    lat: 26.2,
+    lng: 91.75,
     technique: "Beehive Fencing",
     techniqueType: "bio-fencing",
     description:
@@ -34,8 +34,8 @@ export const hotspots: Hotspot[] = [
     name: "Chili Fence Initiative",
     country: "Thailand",
     countryId: "thailand",
-    x: 368,
-    y: 268,
+    lat: 12.05,
+    lng: 99.65,
     technique: "Chili Fencing",
     techniqueType: "bio-fencing",
     description:
@@ -49,8 +49,8 @@ export const hotspots: Hotspot[] = [
     name: "SMS Early Warning System",
     country: "Sri Lanka",
     countryId: "sri-lanka",
-    x: 186,
-    y: 334,
+    lat: 7.45,
+    lng: 80.55,
     technique: "SMS Early Warning",
     techniqueType: "early-warning",
     description:
@@ -64,8 +64,8 @@ export const hotspots: Hotspot[] = [
     name: "Terai Arc Corridor",
     country: "Nepal",
     countryId: "nepal",
-    x: 236,
-    y: 128,
+    lat: 28.2,
+    lng: 81.5,
     technique: "Community Forest Corridors",
     techniqueType: "habitat",
     description:
@@ -79,8 +79,8 @@ export const hotspots: Hotspot[] = [
     name: "Human-Elephant Response Units",
     country: "Indonesia",
     countryId: "indonesia",
-    x: 358,
-    y: 408,
+    lat: -5.05,
+    lng: 105.55,
     technique: "Community Response Teams",
     techniqueType: "community",
     description:
@@ -94,8 +94,8 @@ export const hotspots: Hotspot[] = [
     name: "Solar-Powered Deterrents",
     country: "India",
     countryId: "india",
-    x: 188,
-    y: 248,
+    lat: 13.0,
+    lng: 76.1,
     technique: "Solar Flashing Lights",
     techniqueType: "early-warning",
     description:
@@ -109,32 +109,47 @@ export const hotspots: Hotspot[] = [
 export const migrationCorridors = [
   {
     id: "corridor-1",
-    from: { x: 220, y: 200 },
-    to: { x: 236, y: 128 },
-    label: "India-Nepal",
+    label: "India–Nepal",
+    path: [
+      [26.5, 84.5],
+      [27.2, 83.2],
+      [28.0, 81.5],
+    ] as [number, number][],
   },
   {
     id: "corridor-2",
-    from: { x: 332, y: 185 },
-    to: { x: 362, y: 272 },
-    label: "Myanmar-Thailand",
+    label: "Myanmar–Thailand",
+    path: [
+      [19.0, 97.5],
+      [17.5, 98.0],
+      [16.0, 98.5],
+    ] as [number, number][],
   },
   {
     id: "corridor-3",
-    from: { x: 362, y: 272 },
-    to: { x: 374, y: 338 },
-    label: "Thailand-Malaysia",
+    label: "Thailand–Malaysia",
+    path: [
+      [6.8, 100.2],
+      [5.8, 100.8],
+      [4.5, 101.2],
+    ] as [number, number][],
   },
   {
     id: "corridor-4",
-    from: { x: 374, y: 338 },
-    to: { x: 355, y: 418 },
-    label: "Malaysia-Sumatra",
+    label: "Malaysia–Sumatra",
+    path: [
+      [2.2, 102.0],
+      [1.2, 103.0],
+      [0.5, 104.0],
+    ] as [number, number][],
   },
   {
     id: "corridor-5",
-    from: { x: 186, y: 334 },
-    to: { x: 200, y: 240 },
     label: "Sri Lanka corridor",
+    path: [
+      [7.5, 80.2],
+      [7.3, 80.8],
+      [7.0, 81.2],
+    ] as [number, number][],
   },
 ];

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { AuthHeaderActions } from "@/components/auth/AuthHeaderActions";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
@@ -45,7 +46,10 @@ export function Header() {
             ))}
           </nav>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:block">
+              <AuthHeaderActions />
+            </div>
             <Button href="/sanctuaries" size="sm" variant="secondary">
               Plan a Visit
             </Button>
@@ -80,6 +84,9 @@ export function Header() {
                 {link.label}
               </Link>
             ))}
+            <div className="pt-3 border-t border-border mt-2">
+              <AuthHeaderActions />
+            </div>
           </nav>
         )}
       </div>

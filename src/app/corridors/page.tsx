@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Container } from "@/components/ui/Container";
-import { SectionHeading } from "@/components/ui/SectionHeading";
+import { ExplorePageHeader } from "@/components/layout/ExplorePageHeader";
 import { CorridorCard } from "@/components/corridors/CorridorCard";
 import { DnaExplainer } from "@/components/corridors/DnaExplainer";
 import { corridors } from "@/data/corridors";
@@ -13,24 +13,20 @@ export const metadata: Metadata = {
 
 export default function CorridorsPage() {
   return (
-    <>
-      <section className="py-16 md:py-24 bg-forest text-ivory">
-        <Container>
-          <SectionHeading
-            eyebrow="Wild Corridors"
-            title="Land Bridges Between Herds"
-            description="Wild elephant populations are islands — cut off by farms, highways, and plantations. Corridors reconnect them. Genetics tells us whether those connections are working. This page covers both: real corridor projects and the science behind them — without the fake sponsor dashboards."
-          />
-        </Container>
-      </section>
+    <div className="bg-slate-50 min-h-screen">
+      <ExplorePageHeader
+        eyebrow="Wild corridors"
+        title="Land Bridges Between Herds"
+        description="Wild elephant populations are islands — cut off by farms, highways, and plantations. Corridors reconnect them. See also the Range Map for geographic context."
+      />
 
-      <section className="py-16 md:py-24">
+      <section className="py-8 md:py-10">
         <Container size="wide">
-          <SectionHeading
-            title="Critical Corridors"
-            description="Five high-priority land bridges across the range. Hectare figures are estimates from published project reports — not live funding trackers."
-          />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10">
+          <p className="text-sm text-slate-500 mb-6">
+            Five high-priority land bridges across the range. Hectare figures are estimates from
+            published project reports.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {corridors.map((corridor) => (
               <CorridorCard key={corridor.id} corridor={corridor} />
             ))}
@@ -38,11 +34,11 @@ export default function CorridorsPage() {
         </Container>
       </section>
 
-      <section className="py-16 md:py-24 bg-sage/10">
+      <section className="py-8 md:py-10 border-t border-slate-200 bg-white">
         <Container size="wide">
           <DnaExplainer />
         </Container>
       </section>
-    </>
+    </div>
   );
 }

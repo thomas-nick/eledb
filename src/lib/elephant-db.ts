@@ -646,3 +646,39 @@ export async function getLocationMysql(locationId: string): Promise<LocationSumm
   );
   return rows[0] ? rowToLocation(rows[0]) : null;
 }
+
+export interface CountryDbStats {
+  total: number;
+  living: number;
+  deceased: number;
+  named: number;
+  campCount: number;
+}
+
+export async function getCountryStatsMysql(dbCountry: string): Promise<CountryDbStats> {
+  const db = getMysqlPool();
+  const [statRows] = await db.query<RowDataPacket[]>(
+    `SELECT
+       COUNT(*) AS total,
+       SUM(status = 'living') AS living,
+       SUM(status = 'deceased') AS deceased,
+       SUM(name != 'unknown' AND TRIM(name) != '' AND LOWER(TRIM(name)) != 'unnamed') AS named
+     FROM elephants
+     WHERE country = ?`,
+    [dbCountry]
+  );
+  const [campRows] = await db.query<RowDataPacket[]>(
+    `SELECT COUNT(DISTINCT location_id) AS camp_count
+     FROM elephants
+     WHERE country = ? AND location_id IS NOT NULL AND location_id != ''`,
+    [dbCountry]
+  );
+  const row = statRows[0];
+  return {
+    total: Number(row?.total ?? 0),
+    living: Number(row?.living ?? 0),
+    deceased: Number(row?.deceased ?? 0),
+    named: Number(row?.named ?? 0),
+    campCount: Number(campRows[0]?.camp_count ?? 0),
+  };
+}
