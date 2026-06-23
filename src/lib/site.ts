@@ -7,6 +7,8 @@ export const SITE_URL = (
 
 export const SITE_NAME = "mahoot";
 
+export const LOGO_SRC = "/logo.png";
+
 export function absoluteUrl(path: string): string {
   return `${SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }

@@ -4,7 +4,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { AuthSessionProvider } from "@/components/providers/AuthSessionProvider";
 import { Analytics } from "@/components/analytics/Analytics";
-import { SITE_URL, SITE_NAME } from "@/lib/site";
+import { SITE_URL, SITE_NAME, LOGO_SRC } from "@/lib/site";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -35,6 +35,10 @@ export const metadata: Metadata = {
     "wildlife corridors",
     "mahout",
   ],
+  icons: {
+    icon: LOGO_SRC,
+    apple: LOGO_SRC,
+  },
 };
 
 export default function RootLayout({

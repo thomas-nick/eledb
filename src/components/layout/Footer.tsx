@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
+import { Logo } from "@/components/layout/Logo";
 import { SITE_NAME } from "@/lib/site";
 
 const footerLinks = {
@@ -24,7 +25,14 @@ export function Footer() {
       <Container className="py-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           <div className="md:col-span-2">
-            <h3 className="font-serif text-2xl font-bold mb-4 tracking-tight">{SITE_NAME}</h3>
+            <div className="mb-4">
+              <Logo
+                link={false}
+                showWordmark
+                imageClassName="h-11 w-11"
+                wordmarkClassName="text-ivory text-2xl"
+              />
+            </div>
             <p className="text-ivory/70 max-w-md leading-relaxed">
               A resource for people who love Asian elephants — where to visit, 
               what to know about mahout culture, wild corridors, and field notes 
