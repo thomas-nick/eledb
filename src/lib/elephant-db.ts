@@ -40,8 +40,10 @@ CREATE TABLE IF NOT EXISTS elephants (
   photos JSON NULL,
   sources JSON NULL,
   source_url VARCHAR(512) NOT NULL,
+  source VARCHAR(32) NOT NULL DEFAULT 'elephant.se',
   synced_at DATETIME NOT NULL,
   INDEX idx_country (country),
+  INDEX idx_source (source),
   INDEX idx_status (status),
   INDEX idx_sex (sex),
   INDEX idx_category (category),
@@ -65,6 +67,7 @@ const MIGRATION_COLUMNS: { name: string; ddl: string }[] = [
   { name: "transfers", ddl: "ADD COLUMN transfers JSON NULL" },
   { name: "photos", ddl: "ADD COLUMN photos JSON NULL" },
   { name: "sources", ddl: "ADD COLUMN sources JSON NULL" },
+  { name: "source", ddl: "ADD COLUMN source VARCHAR(32) NOT NULL DEFAULT 'elephant.se'" },
 ];
 
 interface ElephantRow extends RowDataPacket {
@@ -257,6 +260,7 @@ export async function migrateElephantSchema(): Promise<void> {
     "CREATE INDEX idx_subspecies ON elephants (subspecies)",
     "CREATE INDEX idx_father_id ON elephants (father_id)",
     "CREATE INDEX idx_mother_id ON elephants (mother_id)",
+    "CREATE INDEX idx_source ON elephants (source)",
   ];
   for (const sql of indexMigrations) {
     try {
@@ -300,6 +304,9 @@ async function migrateFulltextSearchIndex(db: Pool) {
   }
 }
 
+// Camp-owned elephants live under a `camp_`-prefixed id namespace with source='camp'.
+// The elephant.se crawl only ever produces numeric ids (source='elephant.se') and never
+// issues DELETEs, so manager-created records can never be overwritten by a sync.
 export async function upsertElephants(records: ElephantRecord[]): Promise<void> {
   if (records.length === 0) return;
   facetCache = null;

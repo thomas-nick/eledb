@@ -21,6 +21,7 @@ import {
 } from "../../src/lib/elephant-db";
 import { migrateEnrichmentSchema } from "../../src/lib/elephant-enrichment-db";
 import { migrateContributionSchema } from "../../src/lib/contribution-db";
+import { migrateCampSchema } from "../../src/lib/camp-db";
 import type { ElephantRecord } from "../../src/types/elephant";
 import { runWorldwideCrawl } from "./crawl";
 import { failIfNoSync } from "./assert-sync";
@@ -223,7 +224,8 @@ async function runInit() {
   await initElephantSchema();
   await migrateEnrichmentSchema();
   await migrateContributionSchema();
-  console.log("MySQL elephants + enrichments + contributions tables ready");
+  await migrateCampSchema();
+  console.log("MySQL elephants + enrichments + contributions + camps tables ready");
 }
 
 async function runMigrate() {
@@ -233,6 +235,7 @@ async function runMigrate() {
   await migrateElephantSchema();
   await migrateEnrichmentSchema();
   await migrateContributionSchema();
+  await migrateCampSchema();
   console.log("MySQL schema migration complete");
 }
 

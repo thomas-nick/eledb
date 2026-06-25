@@ -219,6 +219,29 @@ export async function createContribution(input: {
   };
 }
 
+/**
+ * Write an elephant override immediately, bypassing the moderation queue.
+ * Used by verified camp managers whose edits publish instantly. Merges with
+ * any existing override so partial updates do not clobber prior corrections.
+ */
+export async function writeElephantOverride(input: {
+  elephantId: string;
+  changes: Partial<Record<OverrideFieldKey, string | number>>;
+  updatedBy: string;
+}): Promise<ElephantOverride | null> {
+  const db = getMysqlPool();
+  const now = new Date();
+  const existing = await getElephantOverride(input.elephantId);
+  const merged = { ...(existing?.fields ?? {}), ...input.changes };
+  await db.query(
+    `INSERT INTO elephant_overrides (elephant_id, fields, updated_by, updated_at)
+     VALUES (?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE fields = VALUES(fields), updated_by = VALUES(updated_by), updated_at = VALUES(updated_at)`,
+    [input.elephantId, JSON.stringify(merged), input.updatedBy, now]
+  );
+  return getElephantOverride(input.elephantId);
+}
+
 export async function listContributionsByUser(userId: string): Promise<ContributionRecord[]> {
   const db = getMysqlPool();
   const [rows] = await db.query<ContributionRow[]>(

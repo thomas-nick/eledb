@@ -4,11 +4,16 @@ import {
   isMysqlConfigured,
   listLocationsMysql,
 } from "@/lib/elephant-db";
+import { getCampProfile } from "@/lib/camp-db";
 import { normalizeLocationDisplayName } from "@/lib/locationDisplay";
 import { isUnnamedRecord } from "@/lib/elephantNames";
 import { getSanctuaryIdsForLocation } from "@/data/elephantSeLocations";
 import type { ElephantRecord } from "@/types/elephant";
-import type { LocationListResult, LocationSummary } from "@/types/location";
+import type {
+  LocationListResult,
+  LocationProfile,
+  LocationSummary,
+} from "@/types/location";
 
 const seedElephants = seedData as ElephantRecord[];
 
@@ -77,11 +82,32 @@ export async function listLocations(options: {
   return buildLocalLocations(options);
 }
 
+async function attachProfile(location: LocationSummary): Promise<LocationSummary> {
+  if (!isMysqlConfigured()) return location;
+  try {
+    const profile = await getCampProfile(location.id);
+    if (!profile) return location;
+    const mapped: LocationProfile = {
+      description: profile.description,
+      website: profile.website,
+      contactEmail: profile.contactEmail,
+      phone: profile.phone,
+      address: profile.address,
+      welfareNotes: profile.welfareNotes,
+      heroPhotoUrl: profile.heroPhotoUrl,
+      updatedAt: profile.updatedAt,
+    };
+    return { ...location, profile: mapped, claimed: true };
+  } catch {
+    return location;
+  }
+}
+
 export async function getLocation(locationId: string): Promise<LocationSummary | null> {
   if (isMysqlConfigured()) {
     try {
       const loc = await getLocationMysql(locationId);
-      if (loc) return loc;
+      if (loc) return attachProfile(loc);
     } catch {
       // fall through
     }
@@ -89,7 +115,7 @@ export async function getLocation(locationId: string): Promise<LocationSummary |
   const match = seedElephants.filter((e) => e.locationId === locationId);
   if (match.length === 0) return null;
   const first = match[0];
-  return {
+  const base: LocationSummary = {
     id: locationId,
     name: first.locationName,
     displayName: normalizeLocationDisplayName(first.locationName),
@@ -100,4 +126,5 @@ export async function getLocation(locationId: string): Promise<LocationSummary |
     namedCount: match.filter((e) => !isUnnamedRecord(e)).length,
     sanctuaryIds: getSanctuaryIdsForLocation(locationId),
   };
+  return attachProfile(base);
 }

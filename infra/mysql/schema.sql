@@ -31,8 +31,10 @@ CREATE TABLE IF NOT EXISTS elephants (
   photos JSON NULL,
   sources JSON NULL,
   source_url VARCHAR(512) NOT NULL,
+  source VARCHAR(32) NOT NULL DEFAULT 'elephant.se',
   synced_at DATETIME NOT NULL,
   INDEX idx_country (country),
+  INDEX idx_source (source),
   INDEX idx_status (status),
   INDEX idx_sex (sex),
   INDEX idx_category (category),
@@ -93,6 +95,47 @@ CREATE TABLE IF NOT EXISTS elephant_overrides (
   updated_by VARCHAR(36) NULL,
   updated_at DATETIME NOT NULL,
   INDEX idx_updated_by (updated_by)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS camp_profiles (
+  location_id VARCHAR(32) NOT NULL PRIMARY KEY,
+  description TEXT NULL,
+  website VARCHAR(512) NULL,
+  contact_email VARCHAR(255) NULL,
+  phone VARCHAR(64) NULL,
+  address VARCHAR(512) NULL,
+  welfare_notes TEXT NULL,
+  hero_photo_url VARCHAR(512) NULL,
+  updated_by VARCHAR(36) NULL,
+  updated_at DATETIME NOT NULL,
+  INDEX idx_updated_by (updated_by)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS camp_claims (
+  id VARCHAR(36) NOT NULL PRIMARY KEY,
+  location_id VARCHAR(32) NOT NULL,
+  location_name VARCHAR(512) NOT NULL,
+  user_id VARCHAR(36) NOT NULL,
+  role_at_camp VARCHAR(128) NULL,
+  contact VARCHAR(255) NULL,
+  message TEXT NULL,
+  status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+  reviewer_id VARCHAR(36) NULL,
+  review_note TEXT NULL,
+  created_at DATETIME NOT NULL,
+  reviewed_at DATETIME NULL,
+  INDEX idx_location_id (location_id),
+  INDEX idx_user_id (user_id),
+  INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS camp_managers (
+  location_id VARCHAR(32) NOT NULL,
+  user_id VARCHAR(36) NOT NULL,
+  granted_by VARCHAR(36) NULL,
+  created_at DATETIME NOT NULL,
+  PRIMARY KEY (location_id, user_id),
+  INDEX idx_user_id (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS elephant_enrichments (

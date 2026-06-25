@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { AuthHeaderActions } from "@/components/auth/AuthHeaderActions";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/layout/Logo";
+import { ManageNavLink } from "@/components/layout/ManageNavLink";
 
 const navLinks = [
   { href: "/sanctuaries", label: "Sanctuaries" },
@@ -42,6 +43,7 @@ export function Header() {
                 {link.label}
               </Link>
             ))}
+            <ManageNavLink />
           </nav>
 
           <div className="flex items-center gap-3">
@@ -82,6 +84,9 @@ export function Header() {
                 {link.label}
               </Link>
             ))}
+            <div className="py-2">
+              <ManageNavLink onNavigate={() => setMobileOpen(false)} />
+            </div>
             <div className="pt-3 border-t border-border mt-2">
               <AuthHeaderActions />
             </div>

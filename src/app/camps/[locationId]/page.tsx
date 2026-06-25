@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { auth } from "@/auth";
 import { Container } from "@/components/ui/Container";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { ElephantCard } from "@/components/elephants/ElephantCard";
 import { ElephantAttribution } from "@/components/elephants/ElephantAttribution";
 import { sanctuaries } from "@/data/sanctuaries";
+import { getClaimByUserAndLocation, isCampManager } from "@/lib/camp-db";
 import { getLocation } from "@/lib/locations";
 import { searchElephants } from "@/lib/elephants";
 import { getLocationEnrichments } from "@/lib/elephantEnrichments";
@@ -40,6 +42,17 @@ export default async function CampPage({ params }: CampPageProps) {
 
   const linkedSanctuaries = sanctuaries.filter((s) => location.sanctuaryIds.includes(s.id));
   const unnamedLiving = location.livingCount - location.namedCount;
+
+  const session = await auth();
+  const userId = session?.user?.id;
+  const [isManager, existingClaim] = userId
+    ? await Promise.all([
+        isCampManager(userId, locationId),
+        getClaimByUserAndLocation(userId, locationId),
+      ])
+    : [false, null];
+  const hasPendingClaim = existingClaim?.status === "pending";
+  const profile = location.profile;
 
   const [{ elephants, total }, enrichments] = await Promise.all([
     searchElephants({
@@ -83,11 +96,76 @@ export default async function CampPage({ params }: CampPageProps) {
             <span>·</span>
             <span>{location.elephantCount.toLocaleString()} total records</span>
           </div>
+
+          <div className="mt-6">
+            {isManager ? (
+              <Link
+                href={`/manage/camps/${locationId}`}
+                className="inline-flex items-center rounded-full bg-ivory px-4 py-2 text-sm font-medium text-forest hover:bg-ivory/90"
+              >
+                Manage this camp →
+              </Link>
+            ) : hasPendingClaim ? (
+              <span className="inline-flex items-center rounded-full border border-ivory/40 px-4 py-2 text-sm text-ivory/80">
+                Claim pending review
+              </span>
+            ) : (
+              <Link
+                href={`/claim/${locationId}`}
+                className="inline-flex items-center rounded-full border border-ivory/60 px-4 py-2 text-sm font-medium text-ivory hover:bg-ivory hover:text-forest"
+              >
+                Work here? Claim this listing
+              </Link>
+            )}
+          </div>
         </Container>
       </section>
 
       <section className="py-12 md:py-16">
         <Container size="wide">
+          {profile && (profile.description || profile.welfareNotes || profile.website || profile.contactEmail || profile.phone || profile.address) && (
+            <Card className="p-6 mb-8">
+              <div className="flex items-center gap-2 mb-3">
+                <Badge variant="success">Managed by this camp</Badge>
+              </div>
+              {profile.description && (
+                <p className="text-sm text-muted leading-relaxed whitespace-pre-line">
+                  {profile.description}
+                </p>
+              )}
+              {profile.welfareNotes && (
+                <div className="mt-4">
+                  <h3 className="font-serif text-lg font-bold text-forest mb-1">Welfare practices</h3>
+                  <p className="text-sm text-muted leading-relaxed whitespace-pre-line">
+                    {profile.welfareNotes}
+                  </p>
+                </div>
+              )}
+              <div className="mt-4 flex flex-wrap gap-4 text-sm">
+                {profile.website && (
+                  <a
+                    href={profile.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-clay hover:text-forest font-medium"
+                  >
+                    Website →
+                  </a>
+                )}
+                {profile.contactEmail && (
+                  <a
+                    href={`mailto:${profile.contactEmail}`}
+                    className="text-clay hover:text-forest font-medium"
+                  >
+                    {profile.contactEmail}
+                  </a>
+                )}
+                {profile.phone && <span className="text-muted">{profile.phone}</span>}
+                {profile.address && <span className="text-muted">{profile.address}</span>}
+              </div>
+            </Card>
+          )}
+
           {unnamedLiving > 0 && (
             <Card className="p-5 mb-8 bg-amber-50 border-amber-200">
               <p className="text-sm text-muted leading-relaxed">
