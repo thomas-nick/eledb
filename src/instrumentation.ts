@@ -1,8 +1,18 @@
 import type { Instrumentation } from "next";
 
+function mysqlEnvConfigured(): boolean {
+  return Boolean(
+    process.env.MYSQL_HOST &&
+      process.env.MYSQL_USER &&
+      process.env.MYSQL_DATABASE &&
+      process.env.MYSQL_HOST !== "disabled"
+  );
+}
+
+/** Load `.env.production` for any vars missing from hPanel (e.g. MYSQL_*). */
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
-  if (process.env.AUTH_SECRET) return;
+  if (process.env.AUTH_SECRET && mysqlEnvConfigured()) return;
 
   const { config } = await import("dotenv");
   const { resolve } = await import("node:path");

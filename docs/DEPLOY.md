@@ -10,24 +10,48 @@ npm run sync:migrate
 
 Creates `users`, `contributions`, `community_photos`, `elephant_overrides` (plus existing elephant tables).
 
-## 2. Environment variables
+## 2. Environment variables (hPanel — recommended)
 
-Copy `.env.example` to `.env.local` (dev) or set in Hostinger Node app env (production).
+**Yes — you can import env in hPanel.** This is the preferred approach; you do not need to bundle `.env.production` in deploy zips.
+
+1. **hPanel** → **Websites** → **mahoot.xyz** → **Deployments** → **Settings & Redeploy**
+2. Scroll to **Environment variables**
+3. Click **Import .env** and either upload or **paste** the contents of your local `.env.production`
+4. Click **Save** and **Redeploy** (env changes only apply after a rebuild)
+
+Use [`.env.hostinger.example`](.env.hostinger.example) as a checklist. Copy real values from your local `.env.production` (gitignored).
 
 | Variable | Production value |
 |----------|------------------|
+| `MYSQL_HOST` | e.g. `srv1529.hstgr.io` |
+| `MYSQL_PORT` | `3306` |
+| `MYSQL_DATABASE` | From hPanel → Databases |
+| `MYSQL_USER` | From hPanel → Databases |
+| `MYSQL_PASSWORD` | From hPanel → Databases |
 | `AUTH_SECRET` | `openssl rand -base64 32` |
+| `NEXTAUTH_SECRET` | Same as `AUTH_SECRET` |
 | `AUTH_URL` | `https://mahoot.xyz` |
+| `NEXTAUTH_URL` | `https://mahoot.xyz` |
 | `AUTH_TRUST_HOST` | `true` |
-| `GOOGLE_CLIENT_ID` | From Google Cloud Console |
-| `GOOGLE_CLIENT_SECRET` | From Google Cloud Console |
+| `GOOGLE_CLIENT_ID` | From Google Cloud Console (optional) |
+| `GOOGLE_CLIENT_SECRET` | From Google Cloud Console (optional) |
 | `ADMIN_EMAILS` | Your email (comma-separated for multiple admins) |
-| `UPLOAD_DIR` | Persistent path **outside** the git deploy dir, e.g. `/home/.../private/uploads` |
-| `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | (Optional) e.g. `mahoot.xyz` — enables Plausible analytics |
-| `NEXT_PUBLIC_PLAUSIBLE_SRC` | (Optional) Plausible script URL; defaults to `https://plausible.io/js/script.js` |
-| `ERROR_WEBHOOK_URL` | (Optional) Webhook for server errors (Sentry-compatible sink) |
+| `UPLOAD_DIR` | `/home/u196551923/domains/mahoot.xyz/private/uploads` |
+| `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | (Optional) e.g. `mahoot.xyz` — set **before** build |
+| `ERROR_WEBHOOK_URL` | (Optional) Webhook for server errors |
 
-Set these in **hPanel → Websites → mahoot.xyz → Node.js → Environment variables**, or in `.env.production` (bundled with Hostinger deploy). `NEXT_PUBLIC_*` vars must be present **before** `npm run build` on the server.
+`NEXT_PUBLIC_*` vars must be present **before** `npm run build` on the server.
+
+### Optional: bundle env in deploy zip
+
+If you deploy via MCP/CLI instead of hPanel import:
+
+```bash
+chmod +x scripts/deploy-hostinger.sh
+./scripts/deploy-hostinger.sh /tmp/mahoot-deploy.zip
+```
+
+This adds your local `.env.production` to the archive. Prefer hPanel import so secrets stay out of deploy artifacts.
 
 ## 3. Google OAuth
 
