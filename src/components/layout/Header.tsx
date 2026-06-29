@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { AuthHeaderActions } from "@/components/auth/AuthHeaderActions";
+import { Container } from "@/components/ui/Container";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/layout/Logo";
 import { ManageNavLink } from "@/components/layout/ManageNavLink";
+import { GlobalSearch } from "@/components/search/GlobalSearch";
 
 const navLinks = [
   { href: "/sanctuaries", label: "Sanctuaries" },
@@ -23,10 +25,13 @@ const navLinks = [
 export function Header() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const mobileNavId = useId();
+
+  const hideHeaderSearch = pathname === "/" || pathname.startsWith("/elephants");
 
   return (
     <header className="sticky top-0 z-50 bg-ivory/90 backdrop-blur-md border-b border-border">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
+      <Container size="wide">
         <div className="flex h-16 items-center justify-between">
           <Logo showWordmark imageClassName="h-9 w-9" />
 
@@ -47,16 +52,20 @@ export function Header() {
           </nav>
 
           <div className="flex items-center gap-3">
+            {!hideHeaderSearch && <GlobalSearch />}
             <div className="hidden sm:block">
               <AuthHeaderActions />
             </div>
-            <Button href="/sanctuaries" size="sm" variant="secondary">
+            <Button href="/sanctuaries" size="sm" variant="secondary" className="hidden md:inline-flex">
               Plan a Visit
             </Button>
             <button
+              type="button"
               className="md:hidden p-2 text-forest"
               onClick={() => setMobileOpen(!mobileOpen)}
               aria-label="Toggle menu"
+              aria-expanded={mobileOpen}
+              aria-controls={mobileNavId}
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 {mobileOpen ? (
@@ -70,7 +79,7 @@ export function Header() {
         </div>
 
         {mobileOpen && (
-          <nav className="md:hidden pb-4 border-t border-border pt-4">
+          <nav id={mobileNavId} className="md:hidden pb-4 border-t border-border pt-4">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -84,6 +93,13 @@ export function Header() {
                 {link.label}
               </Link>
             ))}
+            <Link
+              href="/sanctuaries"
+              onClick={() => setMobileOpen(false)}
+              className="block py-2 text-sm font-medium text-clay"
+            >
+              Plan a Visit
+            </Link>
             <div className="py-2">
               <ManageNavLink onNavigate={() => setMobileOpen(false)} />
             </div>
@@ -92,7 +108,7 @@ export function Header() {
             </div>
           </nav>
         )}
-      </div>
+      </Container>
     </header>
   );
 }

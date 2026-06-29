@@ -1,7 +1,4 @@
-import type { ElephantRecord } from "@/types/elephant";
-
 interface RecordCompletenessProps {
-  elephant: ElephantRecord;
   percent: number;
   filled: number;
   total: number;
@@ -27,7 +24,11 @@ export function RecordCompleteness({ percent, filled, total }: RecordCompletenes
       </div>
       {percent < 80 && (
         <p className="mt-2 text-xs text-slate-500">
-          Help improve this record — add a photo or suggest a correction.
+          Help improve this record —{" "}
+          <a href="#contribute" className="text-forest font-medium hover:underline">
+            add a photo or suggest a correction
+          </a>
+          .
         </p>
       )}
     </div>

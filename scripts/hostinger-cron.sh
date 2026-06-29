@@ -58,10 +58,20 @@ npm run sync:migrate
 case "$MODE" in
   quick)
     npm run sync:elephants
+    if [[ -n "${TYPESENSE_HOST:-}" && -n "${TYPESENSE_API_KEY:-}" ]]; then
+      npm run typesense:sync
+    else
+      echo "$LOG_PREFIX skipping Typesense sync (TYPESENSE_* not set)"
+    fi
     ;;
   full)
     export SYNC_MAX_RUNTIME_MS="${SYNC_MAX_RUNTIME_MS:-21600000}"
     npm run sync:all
+    if [[ -n "${TYPESENSE_HOST:-}" && -n "${TYPESENSE_API_KEY:-}" ]]; then
+      npm run typesense:sync -- full
+    else
+      echo "$LOG_PREFIX skipping Typesense sync (TYPESENSE_* not set)"
+    fi
     ;;
   *)
     echo "$LOG_PREFIX ERROR: unknown mode '$MODE' (use quick or full)"

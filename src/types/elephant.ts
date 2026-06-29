@@ -84,6 +84,7 @@ export interface ElephantSearchResult {
     categories: { value: string; count: number }[];
     subspecies: { value: string; count: number }[];
     locations: { value: string; count: number }[];
+    sexes?: { value: string; count: number }[];
   };
-  source: "mysql" | "local";
+  source: "mysql" | "local" | "typesense";
 }

@@ -38,6 +38,7 @@ export function RangeMapLeaflet() {
   const [loadError, setLoadError] = useState(false);
   const [selectedHotspot, setSelectedHotspot] = useState<Hotspot | null>(null);
   const [activeStateId, setActiveStateId] = useState<string | null>(null);
+  const [touchMode, setTouchMode] = useState(false);
 
   const stateById = useMemo(
     () => Object.fromEntries(rangeStates.map((s) => [s.id, s])),
@@ -45,6 +46,10 @@ export function RangeMapLeaflet() {
   );
 
   const activeStateData = activeStateId ? stateById[activeStateId] : null;
+
+  useEffect(() => {
+    setTouchMode(window.matchMedia("(hover: none)").matches);
+  }, []);
 
   useEffect(() => {
     fetch(GEOJSON_URL)
@@ -86,11 +91,19 @@ export function RangeMapLeaflet() {
       if (!state) return;
 
       layer.on({
-        mouseover: () => setActiveStateId(id),
-        mouseout: () => setActiveStateId((cur) => (cur === id ? null : cur)),
+        mouseover: () => {
+          if (!touchMode) setActiveStateId(id);
+        },
+        mouseout: () => {
+          if (!touchMode) setActiveStateId((cur) => (cur === id ? null : cur));
+        },
         click: () => {
           track("map_country_click", { country: state.name, slug: id });
-          router.push(`/countries/${id}`);
+          if (touchMode) {
+            setActiveStateId((cur) => (cur === id ? id : id));
+          } else {
+            router.push(`/countries/${id}`);
+          }
         },
       });
 
@@ -99,7 +112,7 @@ export function RangeMapLeaflet() {
         { sticky: true, opacity: 0.95 }
       );
     },
-    [router, stateById]
+    [router, stateById, touchMode]
   );
 
   return (
@@ -234,7 +247,9 @@ export function RangeMapLeaflet() {
             </div>
           ) : (
             <p className="mx-4 mb-4 text-sm text-slate-500 text-center py-1">
-              Hover a country for stats · click to open its country hub
+              {touchMode
+                ? "Tap a country for stats · use Country hub to explore"
+                : "Hover a country for stats · click to open its country hub"}
             </p>
           )}
         </div>

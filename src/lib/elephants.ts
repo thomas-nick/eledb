@@ -8,6 +8,8 @@ import {
 } from "@/lib/elephant-db";
 import { enrichSearchResults } from "@/lib/elephantEnrichments";
 import { applyElephantOverride, getElephantOverride } from "@/lib/contribution-db";
+import { isTypesenseConfigured } from "@/lib/typesense";
+import { searchElephantsTypesense } from "@/lib/typesense-elephants";
 import type {
   ElephantRecord,
   ElephantSearchParams,
@@ -85,6 +87,7 @@ function buildLocalFacets(records: ElephantRecord[]) {
     categories: facetCounts(records, "category"),
     subspecies: facetCounts(records, "subspecies"),
     locations: facetCounts(records, "locationName"),
+    sexes: facetCounts(records, "sex"),
   };
 }
 
@@ -107,6 +110,18 @@ function searchLocal(params: ElephantSearchParams): ElephantSearchResult {
 export async function searchElephants(
   params: ElephantSearchParams
 ): Promise<ElephantSearchResult> {
+  if (isTypesenseConfigured()) {
+    try {
+      const result = await searchElephantsTypesense(params);
+      return {
+        ...result,
+        elephants: await enrichSearchResults(result.elephants),
+      };
+    } catch {
+      // fall through to MySQL
+    }
+  }
+
   if (isMysqlConfigured()) {
     try {
       const result = await searchElephantsMysql(params);

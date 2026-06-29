@@ -4,7 +4,6 @@ import { ContributeButtons } from "@/components/elephants/ContributeButtons";
 import { displayElephantName, isUnnamedRecord } from "@/lib/elephantNames";
 import {
   categoryLabel,
-  sexLabel,
   subspeciesLabel,
 } from "@/lib/elephantDisplay";
 
@@ -46,10 +45,9 @@ export function ProfileHeader({ elephant, bannerPhoto }: ProfileHeaderProps) {
           >
             {displayName}
           </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            {sexLabel[elephant.sex]}
-            {elephant.ageYears != null && ` · ~${elephant.ageYears} years`}
-            {elephant.chipId && ` · Chip ${elephant.chipId}`}
+          <p className="mt-1 text-sm text-muted">
+            {elephant.locationName}
+            {elephant.country && ` · ${elephant.country}`}
           </p>
         </div>
 

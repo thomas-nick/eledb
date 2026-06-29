@@ -43,7 +43,7 @@ export interface CountryPageData {
   corridors: Corridor[];
   sanctuaries: Sanctuary[];
   articles: Article[];
-  source: "mysql" | "local";
+  source: "mysql" | "local" | "typesense";
 }
 
 function computeLocalCountryStats(dbCountry: string): CountryDbStats {

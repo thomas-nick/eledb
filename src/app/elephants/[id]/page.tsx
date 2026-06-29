@@ -4,34 +4,26 @@ import { notFound } from "next/navigation";
 import { Container } from "@/components/ui/Container";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { ElephantAttribution } from "@/components/elephants/ElephantAttribution";
-import { ElephantDetailPanels } from "@/components/elephants/ElephantDetailPanels";
-import { ElephantEnrichmentStory } from "@/components/elephants/ElephantEnrichmentStory";
-import { ElephantHerdSection } from "@/components/elephants/ElephantHerdSection";
-import { ElephantLineageSection } from "@/components/elephants/ElephantLineageSection";
-import { ElephantPhotoGallery } from "@/components/elephants/ElephantPhotoGallery";
-import { ElephantUnnamedBanner } from "@/components/elephants/ElephantUnnamedBanner";
-import { ContributionActivity } from "@/components/elephants/ContributionActivity";
 import { ProfileHeader } from "@/components/elephants/ProfileHeader";
-import { ProfileMetadataStrip } from "@/components/elephants/ProfileMetadataStrip";
-import { ProfileTabs } from "@/components/elephants/ProfileTabs";
 import { RecordCompleteness } from "@/components/elephants/RecordCompleteness";
+import { ElephantProfileTabs } from "@/components/elephants/ElephantProfileTabs";
 import { getCountrySlugFromDbName } from "@/data/countryMeta";
 import { displayElephantName, isUnnamedRecord } from "@/lib/elephantNames";
-import {
-  getCommunityPhotos,
-  computeRecordCompleteness,
-  listContributionsByElephant,
-} from "@/lib/contribution-db";
-import {
-  getElephantEnrichment,
-  mergeProfilePhotos,
-} from "@/lib/elephantEnrichments";
+import { computeRecordCompleteness } from "@/lib/contribution-db";
+import { mergeProfilePhotos } from "@/lib/elephantEnrichments";
 import { resolveElephantPhotoUrl } from "@/lib/elephantSe";
-import { getElephantById, getHerdMates, getOffspring } from "@/lib/elephants";
 import { getSanctuaryIdsForLocation } from "@/data/elephantSeLocations";
 import { sanctuaries } from "@/data/sanctuaries";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { absoluteUrl } from "@/lib/site";
+import {
+  getCachedCommunityPhotos,
+  getCachedElephantById,
+  getCachedElephantEnrichment,
+  getCachedHerdMates,
+  getCachedOffspring,
+} from "@/lib/elephant-cache";
+import { listContributionsByElephant } from "@/lib/contribution-db";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -39,10 +31,10 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const elephant = await getElephantById(id);
+  const elephant = await getCachedElephantById(id);
   if (!elephant) return { title: "Elephant not found" };
-  const enrichment = await getElephantEnrichment(id);
-  const communityPhotos = await getCommunityPhotos(id);
+  const enrichment = await getCachedElephantEnrichment(id);
+  const communityPhotos = await getCachedCommunityPhotos(id);
   const title = displayElephantName(elephant);
   const description =
     enrichment?.teaser ??
@@ -71,17 +63,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ElephantDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const elephant = await getElephantById(id);
+  const elephant = await getCachedElephantById(id);
   if (!elephant) notFound();
 
   const [offspring, herdMates, father, mother, enrichment, communityPhotos, activity] =
     await Promise.all([
-      getOffspring(id),
-      elephant.locationId ? getHerdMates(elephant.locationId, id) : Promise.resolve([]),
-      elephant.fatherId ? getElephantById(elephant.fatherId) : Promise.resolve(null),
-      elephant.motherId ? getElephantById(elephant.motherId) : Promise.resolve(null),
-      getElephantEnrichment(id),
-      getCommunityPhotos(id),
+      getCachedOffspring(id),
+      elephant.locationId ? getCachedHerdMates(elephant.locationId, id) : Promise.resolve([]),
+      elephant.fatherId ? getCachedElephantById(elephant.fatherId) : Promise.resolve(null),
+      elephant.motherId ? getCachedElephantById(elephant.motherId) : Promise.resolve(null),
+      getCachedElephantEnrichment(id),
+      getCachedCommunityPhotos(id),
       listContributionsByElephant(id),
     ]);
 
@@ -142,38 +134,22 @@ export default async function ElephantDetailPage({ params }: PageProps) {
 
         <div className="mt-4 space-y-5">
           <ProfileHeader elephant={elephant} bannerPhoto={photos[0]} />
-          <ProfileMetadataStrip elephant={elephant} />
-          <RecordCompleteness elephant={elephant} {...completeness} />
+          <RecordCompleteness {...completeness} />
         </div>
 
         <div className="mt-8">
-          <ProfileTabs
-            overview={
-              <div className="space-y-8">
-                {enrichment && <ElephantEnrichmentStory enrichment={enrichment} />}
-                {unnamed && !enrichment && <ElephantUnnamedBanner elephant={elephant} />}
-                <ElephantDetailPanels elephant={elephant} linkedSanctuaries={linkedSanctuaries} />
-              </div>
-            }
-            lineage={
-              <ElephantLineageSection
-                elephant={elephant}
-                father={father}
-                mother={mother}
-                offspring={offspring}
-              />
-            }
-            herd={<ElephantHerdSection elephant={elephant} herdMates={herdMates} />}
-            photos={
-              photos.length > 0 ? (
-                <ElephantPhotoGallery photos={photos} elephantName={displayName} />
-              ) : (
-                <p className="text-sm text-slate-500">No photos yet for this record.</p>
-              )
-            }
-            activity={
-              <ContributionActivity contributions={activity} syncedAt={elephant.syncedAt} />
-            }
+          <ElephantProfileTabs
+            elephant={elephant}
+            enrichment={enrichment}
+            unnamed={unnamed}
+            linkedSanctuaries={linkedSanctuaries}
+            father={father}
+            mother={mother}
+            offspring={offspring}
+            herdMates={herdMates}
+            photos={photos}
+            displayName={displayName}
+            activity={activity}
           />
         </div>
 

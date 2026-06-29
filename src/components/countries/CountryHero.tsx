@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Container } from "@/components/ui/Container";
 import type { CountryMeta } from "@/data/countryMeta";
 import type { RangeState } from "@/data/rangeStates";
 import { getCountryTheme, COUNTRY_MAP_VIEWBOX } from "@/data/countryMeta";
@@ -33,7 +34,7 @@ export function CountryHero({ meta, range }: CountryHeroProps) {
       <DotPattern accent={theme.accent} />
       <RegionalMapArt activeSlug={meta.slug} />
 
-      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+      <Container size="wide" className="relative py-12 md:py-16">
         <Link
           href="/countries"
           className="inline-flex items-center gap-1.5 text-sm text-white/70 hover:text-white mb-8 transition-colors"
@@ -131,7 +132,7 @@ export function CountryHero({ meta, range }: CountryHeroProps) {
 
           <CountryMapBadge meta={meta} accent={theme.accent} />
         </div>
-      </div>
+      </Container>
     </section>
   );
 }

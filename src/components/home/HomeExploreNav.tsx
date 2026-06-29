@@ -19,11 +19,7 @@ export function HomeExploreNav() {
   const onHome = pathname === "/";
 
   return (
-    <nav
-      aria-label="Explore"
-      role="tablist"
-      className="flex flex-wrap gap-2"
-    >
+    <nav aria-label="Explore" className="flex flex-wrap gap-2">
       {homeLinks.map((link) => {
         const active =
           !onHome && (pathname === link.href || pathname.startsWith(`${link.href}/`));
@@ -31,8 +27,7 @@ export function HomeExploreNav() {
           <Link
             key={link.href}
             href={link.href}
-            role="tab"
-            aria-selected={active}
+            aria-current={active ? "page" : undefined}
             className={cn(
               "whitespace-nowrap rounded-lg border px-3.5 py-2 text-sm font-medium transition-colors",
               active

@@ -16,8 +16,8 @@ import type {
 } from "@/types/elephant";
 import type { LocationSummary } from "@/types/location";
 import { cn } from "@/lib/utils";
-import { getCountrySlugFromDbName } from "@/data/countryMeta";
 import { track } from "@/lib/analytics";
+import { categoryLabels, facetLabel, subspeciesLabels } from "@/lib/elephantLabels";
 
 const statusOptions: { value: ElephantStatus | "all"; label: string }[] = [
   { value: "all", label: "All" },
@@ -69,8 +69,10 @@ export function ElephantSearch() {
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
   const [result, setResult] = useState<ElephantSearchResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [campChips, setCampChips] = useState<LocationSummary[]>([]);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const filtersPanelId = "elephant-filters-panel";
 
   const country = searchParams.get("country") ?? "";
   const status = (searchParams.get("status") as ElephantStatus | null) ?? "";
@@ -111,8 +113,20 @@ export function ElephantSearch() {
       const label = sexOptions.find((o) => o.value === sex)?.label ?? sex;
       chips.push({ key: "sex", label, clear: { sex: null } });
     }
-    if (subspecies) chips.push({ key: "subspecies", label: subspecies, clear: { subspecies: null } });
-    if (category) chips.push({ key: "category", label: category, clear: { category: null } });
+    if (subspecies) {
+      chips.push({
+        key: "subspecies",
+        label: subspeciesLabels[subspecies] ?? subspecies,
+        clear: { subspecies: null },
+      });
+    }
+    if (category) {
+      chips.push({
+        key: "category",
+        label: categoryLabels[category] ?? category,
+        clear: { category: null },
+      });
+    }
     if (locationId || locationName) {
       chips.push({
         key: "location",
@@ -135,14 +149,27 @@ export function ElephantSearch() {
   }, [pathname, router]);
 
   useEffect(() => {
+    if (!filtersOpen) return;
+    const mq = window.matchMedia("(max-width: 767px)");
+    if (!mq.matches) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [filtersOpen]);
+
+  useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
       const target = e.target as HTMLElement;
       if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) {
         return;
       }
-      e.preventDefault();
-      document.getElementById("elephant-search-input")?.focus();
+      if (e.key === "/") {
+        e.preventDefault();
+        document.getElementById("elephant-search-input")?.focus();
+      }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -170,10 +197,21 @@ export function ElephantSearch() {
     params.set("page", String(page));
 
     setLoading(true);
+    setFetchError(null);
     fetch(`/api/elephants/search?${params}`, { signal: controller.signal })
-      .then((r) => r.json())
-      .then((data: ElephantSearchResult) => setResult(data))
-      .catch(() => {})
+      .then((r) => {
+        if (!r.ok) throw new Error("Search failed");
+        return r.json();
+      })
+      .then((data: ElephantSearchResult) => {
+        setResult(data);
+        setFetchError(null);
+      })
+      .catch((err) => {
+        if (err?.name !== "AbortError") {
+          setFetchError("Could not load results. Check your connection and try again.");
+        }
+      })
       .finally(() => setLoading(false));
 
     return () => controller.abort();
@@ -210,8 +248,25 @@ export function ElephantSearch() {
   const countries = result?.facets.countries ?? [];
   const categories = result?.facets.categories ?? [];
   const subspeciesList = result?.facets.subspecies ?? [];
+  const locationFacets = result?.facets.locations ?? [];
+  const statusFacets = result?.facets.statuses ?? [];
+  const sexFacets = result?.facets.sexes ?? [];
   const totalPages = result ? Math.ceil(result.total / result.perPage) : 0;
   const activeFilterCount = activeFilters.length;
+
+  const facetCount = useCallback(
+    (facets: { value: string; count: number }[], value: string) =>
+      facets.find((f) => f.value === value)?.count,
+    []
+  );
+
+  const topLocations = useMemo(
+    () =>
+      locationFacets
+        .filter((l) => l.value && l.value !== "Unknown" && l.count > 0)
+        .slice(0, 8),
+    [locationFacets]
+  );
 
   const topCountries = useMemo(() => {
     if (countries.length > 0) return countries.slice(0, 9);
@@ -260,12 +315,14 @@ export function ElephantSearch() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search name, camp, country, chip ID, parent..."
+                aria-label="Search elephants"
                 className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest"
               />
             </div>
             <select
               value={sort}
               onChange={(e) => updateParams({ sort: e.target.value })}
+              aria-label="Sort by"
               className="px-3 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm shrink-0 focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest"
             >
               {sortOptions.map((opt) => (
@@ -277,6 +334,9 @@ export function ElephantSearch() {
             <button
               type="button"
               onClick={() => setFiltersOpen((o) => !o)}
+              aria-label="Toggle filters"
+              aria-expanded={filtersOpen}
+              aria-controls={filtersPanelId}
               className={cn(
                 "inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-lg border text-sm font-medium transition-colors shrink-0",
                 filtersOpen || activeFilterCount > 0
@@ -321,138 +381,33 @@ export function ElephantSearch() {
             </div>
           )}
 
-          <div className="mt-3 pt-3 border-t border-slate-100 space-y-2.5">
-            <QuickBrowseRow label="Countries">
-              <FilterChip active={!country} onClick={() => updateParams({ country: null })}>
-                All
-              </FilterChip>
-              {topCountries.map((c) => {
-                const slug = getCountrySlugFromDbName(c.value);
-                if (slug) {
-                  return (
-                    <Link
-                      key={c.value}
-                      href={`/countries/${slug}`}
-                      className={cn(
-                        "inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[13px] font-medium border transition-colors",
-                        country === c.value
-                          ? "border-forest bg-forest text-white"
-                          : "border-slate-300 bg-white text-slate-600 hover:border-slate-400 hover:text-slate-900"
-                      )}
-                    >
-                      {c.value}
-                      {c.count > 0 && (
-                        <span className="opacity-60 tabular-nums">{c.count.toLocaleString()}</span>
-                      )}
-                    </Link>
-                  );
-                }
-                return (
-                  <FilterChip
-                    key={c.value}
-                    active={country === c.value}
-                    onClick={() =>
-                      updateParams({ country: country === c.value ? null : c.value })
-                    }
-                  >
-                    {c.value}
-                    {c.count > 0 && (
-                      <span className="opacity-60 tabular-nums">{c.count.toLocaleString()}</span>
-                    )}
-                  </FilterChip>
-                );
-              })}
-              <Link
-                href="/countries"
-                className="inline-flex items-center px-2.5 py-1 rounded-md text-[13px] font-medium text-forest hover:text-forest-light"
-              >
-                All range states →
-              </Link>
-            </QuickBrowseRow>
-
-            <QuickBrowseRow label="Quick">
-              <FilterChip
-                active={status === "living"}
-                onClick={() => updateParams({ status: status === "living" ? null : "living" })}
-              >
-                Living
-              </FilterChip>
-              <FilterChip
-                active={sex === "female"}
-                onClick={() => updateParams({ sex: sex === "female" ? null : "female" })}
-              >
-                Female
-              </FilterChip>
-              <FilterChip
-                active={sex === "male"}
-                onClick={() => updateParams({ sex: sex === "male" ? null : "male" })}
-              >
-                Male
-              </FilterChip>
-              <FilterChip
-                active={hasStory}
-                onClick={() => updateParams({ hasStory: hasStory ? null : "true" })}
-              >
-                Has story
-              </FilterChip>
-              <FilterChip
-                active={category === "camp"}
-                onClick={() => updateParams({ category: category === "camp" ? null : "camp" })}
-              >
-                In camps
-              </FilterChip>
-            </QuickBrowseRow>
-
-            {!locationId && featuredCamps.length > 0 && (
-              <QuickBrowseRow label="Camps">
-                {featuredCamps.map((camp) => (
-                  <FilterChip
-                    key={camp.id}
-                    active={locationId === camp.id}
-                    onClick={() =>
-                      updateParams({
-                        locationId: camp.id,
-                        locationName: camp.name,
-                        category: "camp",
-                        country: camp.country ?? country ?? null,
-                      })
-                    }
-                  >
-                    {camp.name}
-                  </FilterChip>
-                ))}
-                <Link
-                  href={`/camps${country ? `?country=${encodeURIComponent(country)}` : ""}`}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[13px] font-medium border border-dashed border-slate-300 text-forest hover:border-forest hover:bg-forest/5 transition-colors"
-                >
-                  All camps
-                  <span aria-hidden>→</span>
-                </Link>
-              </QuickBrowseRow>
-            )}
-
-            <QuickBrowseRow label="Explore">
-              {exploreLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[13px] font-medium border border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:text-slate-900 transition-colors"
-                >
-                  {link.label}
-                  <span className="text-slate-400" aria-hidden>
-                    →
-                  </span>
-                </Link>
-              ))}
-            </QuickBrowseRow>
-          </div>
         </Container>
       </section>
 
       {filtersOpen && (
-        <section className="border-b border-slate-200 bg-white">
-          <Container size="wide" className="py-5">
-            <div className="space-y-4">
+        <>
+          <button
+            type="button"
+            aria-label="Close filters"
+            className="fixed inset-0 z-30 bg-slate-900/40 md:hidden"
+            onClick={() => setFiltersOpen(false)}
+          />
+          <section
+            id={filtersPanelId}
+            className="fixed inset-x-0 top-[8.5rem] bottom-0 z-40 overflow-y-auto border-b border-slate-200 bg-white shadow-xl md:static md:z-auto md:max-h-[min(70vh,640px)] md:shadow-none"
+          >
+            <Container size="wide" className="py-4 md:py-5">
+              <div className="flex items-center justify-between mb-4 md:hidden">
+                <p className="text-sm font-semibold text-slate-900">Filters & browse</p>
+                <button
+                  type="button"
+                  onClick={() => setFiltersOpen(false)}
+                  className="rounded-md px-2 py-1 text-sm text-slate-500 hover:text-slate-900"
+                >
+                  Done
+                </button>
+              </div>
+              <div className="space-y-4 pb-6">
               <FilterRow label="Quick filters">
                 <FilterChip active={!includeUnnamed} onClick={() => updateParams({ includeUnnamed: null })}>
                   Named only
@@ -464,10 +419,46 @@ export function ElephantSearch() {
                   Include unnamed
                 </FilterChip>
                 <FilterChip
+                  active={status === "living"}
+                  onClick={() => updateParams({ status: status === "living" ? null : "living" })}
+                >
+                  Living
+                  {facetCount(statusFacets, "living") != null && (
+                    <span className="opacity-50">{facetCount(statusFacets, "living")!.toLocaleString()}</span>
+                  )}
+                </FilterChip>
+                <FilterChip
+                  active={sex === "female"}
+                  onClick={() => updateParams({ sex: sex === "female" ? null : "female" })}
+                >
+                  Female
+                  {facetCount(sexFacets, "female") != null && (
+                    <span className="opacity-50">{facetCount(sexFacets, "female")!.toLocaleString()}</span>
+                  )}
+                </FilterChip>
+                <FilterChip
+                  active={sex === "male"}
+                  onClick={() => updateParams({ sex: sex === "male" ? null : "male" })}
+                >
+                  Male
+                  {facetCount(sexFacets, "male") != null && (
+                    <span className="opacity-50">{facetCount(sexFacets, "male")!.toLocaleString()}</span>
+                  )}
+                </FilterChip>
+                <FilterChip
                   active={hasStory}
                   onClick={() => updateParams({ hasStory: hasStory ? null : "true" })}
                 >
-                  Has sanctuary story
+                  Has story
+                </FilterChip>
+                <FilterChip
+                  active={category === "camp"}
+                  onClick={() => updateParams({ category: category === "camp" ? null : "camp" })}
+                >
+                  In camps
+                  {facetCount(categories, "camp") != null && (
+                    <span className="opacity-50">{facetCount(categories, "camp")!.toLocaleString()}</span>
+                  )}
                 </FilterChip>
               </FilterRow>
 
@@ -490,6 +481,77 @@ export function ElephantSearch() {
                   >
                     Clear
                   </button>
+                </FilterRow>
+              )}
+
+              <FilterRow label="Countries">
+                <FilterChip active={!country} onClick={() => updateParams({ country: null })}>
+                  All
+                </FilterChip>
+                {topCountries.map((c) => (
+                  <FilterChip
+                    key={c.value}
+                    active={country === c.value}
+                    onClick={() => updateParams({ country: country === c.value ? null : c.value })}
+                  >
+                    {c.value}
+                    {c.count > 0 && (
+                      <span className="opacity-50">{c.count.toLocaleString()}</span>
+                    )}
+                  </FilterChip>
+                ))}
+                <Link
+                  href="/countries"
+                  className="inline-flex items-center px-2.5 py-1 rounded-md text-[13px] font-medium text-forest hover:text-forest-light"
+                >
+                  All range states →
+                </Link>
+              </FilterRow>
+
+              {!locationId && topLocations.length > 0 && (
+                <FilterRow label="Top facilities">
+                  {topLocations.map((loc) => (
+                    <FilterChip
+                      key={loc.value}
+                      active={locationName === loc.value}
+                      onClick={() =>
+                        updateParams({
+                          locationName: locationName === loc.value ? null : loc.value,
+                          locationId: null,
+                        })
+                      }
+                    >
+                      {loc.value}
+                      <span className="opacity-50">{loc.count.toLocaleString()}</span>
+                    </FilterChip>
+                  ))}
+                </FilterRow>
+              )}
+
+              {!locationId && featuredCamps.length > 0 && (
+                <FilterRow label="Featured camps">
+                  {featuredCamps.map((camp) => (
+                    <FilterChip
+                      key={camp.id}
+                      active={locationId === camp.id}
+                      onClick={() =>
+                        updateParams({
+                          locationId: camp.id,
+                          locationName: camp.name,
+                          category: "camp",
+                          country: camp.country ?? country ?? null,
+                        })
+                      }
+                    >
+                      {camp.name}
+                    </FilterChip>
+                  ))}
+                  <Link
+                    href={`/camps${country ? `?country=${encodeURIComponent(country)}` : ""}`}
+                    className="inline-flex items-center px-2.5 py-1 rounded-md text-[13px] font-medium border border-dashed border-slate-300 text-forest hover:text-forest-light"
+                  >
+                    All camps →
+                  </Link>
                 </FilterRow>
               )}
 
@@ -520,35 +582,6 @@ export function ElephantSearch() {
                   >
                     All camps →
                   </a>
-                </FilterRow>
-              )}
-
-              <FilterRow label="Range countries">
-                <FilterChip active={!country} onClick={() => updateParams({ country: null })}>
-                  All
-                </FilterChip>
-                {rangeCountries.map((c) => (
-                  <FilterChip
-                    key={c}
-                    active={country === c}
-                    onClick={() => updateParams({ country: c })}
-                  >
-                    {c}
-                  </FilterChip>
-                ))}
-              </FilterRow>
-
-              {countries.length > rangeCountries.length && (
-                <FilterRow label="All countries">
-                  {countries.slice(0, 15).map((c) => (
-                    <FilterChip
-                      key={c.value}
-                      active={country === c.value}
-                      onClick={() => updateParams({ country: c.value })}
-                    >
-                      {c.value} <span className="opacity-50">{c.count}</span>
-                    </FilterChip>
-                  ))}
                 </FilterRow>
               )}
 
@@ -589,7 +622,8 @@ export function ElephantSearch() {
                       active={category === c.value}
                       onClick={() => updateParams({ category: c.value as ElephantCategory })}
                     >
-                      {c.value} <span className="opacity-50">{c.count}</span>
+                      {facetLabel("category", c.value)}{" "}
+                      <span className="opacity-50">{c.count}</span>
                     </FilterChip>
                   ))}
                 </FilterRow>
@@ -606,14 +640,29 @@ export function ElephantSearch() {
                       active={subspecies === s.value}
                       onClick={() => updateParams({ subspecies: s.value as ElephantSubspecies })}
                     >
-                      {s.value} <span className="opacity-50">{s.count}</span>
+                      {facetLabel("subspecies", s.value)}{" "}
+                      <span className="opacity-50">{s.count}</span>
                     </FilterChip>
                   ))}
                 </FilterRow>
               )}
+
+              <FilterRow label="Explore">
+                {exploreLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[13px] font-medium border border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:text-slate-900"
+                  >
+                    {link.label}
+                    <span className="text-slate-400" aria-hidden>→</span>
+                  </Link>
+                ))}
+              </FilterRow>
             </div>
           </Container>
         </section>
+        </>
       )}
 
       <section className="py-8">
@@ -630,8 +679,11 @@ export function ElephantSearch() {
                   {result?.total === 1 ? "record" : "records"}
                 </>
               )}
-              {result?.source === "local" && !loading && (
+              {result?.source === "local" && !loading && process.env.NODE_ENV === "development" && (
                 <span className="ml-2 text-xs text-amber-700">(demo seed — set MYSQL_* in .env.local)</span>
+              )}
+              {process.env.NODE_ENV === "development" && result?.source && result.source !== "local" && !loading && (
+                <span className="ml-2 text-xs text-slate-400">via {result.source}</span>
               )}
             </p>
             {totalPages > 1 && !loading && (
@@ -640,6 +692,22 @@ export function ElephantSearch() {
               </p>
             )}
           </div>
+
+          {fetchError && !loading && (
+            <div
+              role="alert"
+              className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+            >
+              <span>{fetchError}</span>
+              <button
+                type="button"
+                onClick={() => updateParams({ page: String(page) })}
+                className="rounded-md border border-red-300 bg-white px-3 py-1 text-sm font-medium text-red-700 hover:bg-red-50"
+              >
+                Retry
+              </button>
+            </div>
+          )}
 
           {loading ? (
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -727,17 +795,6 @@ export function ElephantSearch() {
           </div>
         </Container>
       </section>
-    </div>
-  );
-}
-
-function QuickBrowseRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-      <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 shrink-0 w-16">
-        {label}
-      </span>
-      <div className="flex flex-wrap gap-1.5 items-center min-w-0 flex-1">{children}</div>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Container } from "@/components/ui/Container";
 import { CountryHero } from "@/components/countries/CountryHero";
@@ -5,7 +6,7 @@ import { CountryStatsStrip } from "@/components/countries/CountryStatsStrip";
 import { SectionHeader } from "@/components/countries/SectionHeader";
 import {
   ArticleMiniCard,
-  CorridorCard,
+  CorridorCardMini,
   HotspotCard,
   SanctuaryMiniCard,
 } from "@/components/countries/CountrySectionCards";
@@ -158,7 +159,7 @@ export default async function CountryPage({ params }: CountryPageProps) {
               />
               <div className="space-y-4">
                 {corridors.map((c) => (
-                  <CorridorCard key={c.id} corridor={c} />
+                  <CorridorCardMini key={c.id} corridor={c} />
                 ))}
               </div>
             </div>
@@ -184,9 +185,15 @@ export default async function CountryPage({ params }: CountryPageProps) {
 
           {!hasAnySection && (
             <div className="text-center py-16 rounded-xl border border-dashed border-slate-300 bg-white">
-              <p className="text-sm text-slate-500">
-                No detailed records yet for {meta.title}. Use the search to browse the database.
+              <p className="text-sm text-slate-500 mb-4">
+                No detailed records yet for {meta.title}.
               </p>
+              <Link
+                href={`/elephants?country=${encodeURIComponent(meta.title)}`}
+                className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-forest text-white hover:bg-forest-light transition-colors"
+              >
+                Browse elephants in {meta.title}
+              </Link>
             </div>
           )}
 

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { Container } from "@/components/ui/Container";
 import { ExplorePageHeader } from "@/components/layout/ExplorePageHeader";
@@ -17,7 +18,16 @@ export default function CorridorsPage() {
       <ExplorePageHeader
         eyebrow="Wild corridors"
         title="Land Bridges Between Herds"
-        description="Wild elephant populations are islands — cut off by farms, highways, and plantations. Corridors reconnect them. See also the Range Map for geographic context."
+        description={
+          <>
+            Wild elephant populations are islands — cut off by farms, highways, and plantations.
+            Corridors reconnect them. See also the{" "}
+            <Link href="/coexistence" className="text-forest font-medium hover:underline">
+              Range Map
+            </Link>{" "}
+            for geographic context.
+          </>
+        }
       />
 
       <section className="py-8 md:py-10">

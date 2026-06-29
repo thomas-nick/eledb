@@ -37,6 +37,10 @@ Use [`.env.hostinger.example`](.env.hostinger.example) as a checklist. Copy real
 | `GOOGLE_CLIENT_SECRET` | From Google Cloud Console (optional) |
 | `ADMIN_EMAILS` | Your email (comma-separated for multiple admins) |
 | `UPLOAD_DIR` | `/home/u196551923/domains/mahoot.xyz/private/uploads` |
+| `TYPESENSE_HOST` | (Optional) From [Typesense Cloud](https://cloud.typesense.org) — see [TYPESENSE.md](TYPESENSE.md) |
+| `TYPESENSE_PORT` | `443` |
+| `TYPESENSE_PROTOCOL` | `https` |
+| `TYPESENSE_API_KEY` | Admin API key (server-only) |
 | `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | (Optional) e.g. `mahoot.xyz` — set **before** build |
 | `ERROR_WEBHOOK_URL` | (Optional) Webhook for server errors |
 
@@ -81,3 +85,16 @@ Add your email to `ADMIN_EMAILS` before first sign-in, or sign up then update `u
 2. Submission appears at `/admin/contributions` (admin/moderator only).
 3. Approve → photo goes to `community_photos` or fields merge into `elephant_overrides`.
 4. Weekly elephant.se sync does **not** overwrite community data.
+
+## 8. Typesense search (optional)
+
+Fast typo-tolerant search on `/elephants`. See [TYPESENSE.md](TYPESENSE.md) for Cloud setup.
+
+After adding `TYPESENSE_*` env vars and deploying:
+
+```bash
+npm run typesense:init
+npm run typesense:sync -- full
+```
+
+The Hostinger cron script (`scripts/hostinger-cron.sh`) re-indexes automatically after each sync when Typesense is configured.

@@ -1,29 +1,24 @@
 import Link from "next/link";
 import { ElephantRecord } from "@/types/elephant";
 import { displayElephantName, isUnnamedRecord } from "@/lib/elephantNames";
+import { sexLabels, subspeciesLabels } from "@/lib/elephantLabels";
 import { ElephantPhoto } from "@/components/elephants/ElephantPhoto";
-
-const sexLabel = { male: "Male", female: "Female", unknown: "Unknown" };
-const subspeciesLabel: Record<string, string> = {
-  indian: "Indian",
-  "sri-lankan": "Sri Lankan",
-  sumatran: "Sumatran",
-  borneo: "Bornean",
-  unknown: "",
-};
 
 interface ElephantCardProps {
   elephant: ElephantRecord;
 }
 
 export function ElephantCard({ elephant }: ElephantCardProps) {
-  const sub = elephant.subspecies ? subspeciesLabel[elephant.subspecies] : "";
+  const sub =
+    elephant.subspecies && elephant.subspecies !== "unknown"
+      ? subspeciesLabels[elephant.subspecies]
+      : "";
   const unnamed = isUnnamedRecord(elephant);
   const living = elephant.status === "living";
   const photo = elephant.photoUrl ? { url: elephant.photoUrl } : elephant.photos?.[0];
 
   const meta = [
-    sexLabel[elephant.sex] !== "Unknown" ? sexLabel[elephant.sex] : null,
+    elephant.sex !== "unknown" ? sexLabels[elephant.sex] : null,
     sub || null,
     elephant.ageYears != null
       ? `${elephant.ageYears} yrs`

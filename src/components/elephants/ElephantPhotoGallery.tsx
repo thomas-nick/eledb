@@ -56,44 +56,47 @@ export function ElephantPhotoGallery({ photos, elephantName }: ElephantPhotoGall
       </div>
 
       <Card className="overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setLightboxOpen(true)}
-          className="relative block w-full aspect-[16/9] md:aspect-[21/9] bg-forest/5 cursor-zoom-in group"
-          aria-label={`View full size photo of ${elephantName}`}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={active.url}
-            alt={active.credit ?? elephantName}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-          />
-          <span className="absolute bottom-3 right-3 px-2.5 py-1 rounded-full bg-forest/70 text-ivory text-xs backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
-            Expand
-          </span>
+        <div className="relative w-full aspect-[16/9] md:aspect-[21/9] bg-forest/5 group">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setLightboxOpen(true)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setLightboxOpen(true);
+              }
+            }}
+            className="relative block w-full h-full cursor-zoom-in"
+            aria-label={`View full size photo of ${elephantName}`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={active.url}
+              alt={active.credit ?? elephantName}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+            />
+            <span className="absolute bottom-3 right-3 px-2.5 py-1 rounded-full bg-forest/70 text-ivory text-xs backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
+              Expand
+            </span>
+          </div>
           {hasMultiple && (
             <>
               <GalleryNavButton
                 direction="prev"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  goTo(activeIndex - 1);
-                }}
+                onClick={() => goTo(activeIndex - 1)}
                 className="left-3"
                 label="Previous photo"
               />
               <GalleryNavButton
                 direction="next"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  goTo(activeIndex + 1);
-                }}
+                onClick={() => goTo(activeIndex + 1)}
                 className="right-3"
                 label="Next photo"
               />
             </>
           )}
-        </button>
+        </div>
 
         {active.credit && (
           <p className="px-4 py-3 text-sm text-muted border-t border-border bg-ivory/50">
@@ -194,7 +197,7 @@ function GalleryNavButton({
   large,
 }: {
   direction: "prev" | "next";
-  onClick: (e: React.MouseEvent) => void;
+  onClick: () => void;
   className: string;
   label: string;
   large?: boolean;

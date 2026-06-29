@@ -15,7 +15,9 @@
     "import:enp": "tsx scripts/import-sanctuaries.ts enp",
     "import:sanctuaries": "tsx scripts/import-sanctuaries.ts",
     "generate:map-paths": "tsx scripts/generate-map-paths.ts",
-    "sync:cron": "npm run sync:migrate && npm run sync:elephants"
+    "sync:cron": "npm run sync:migrate && npm run sync:elephants && npm run typesense:sync",
+    "typesense:init": "tsx scripts/typesense/sync.ts init",
+    "typesense:sync": "tsx scripts/typesense/sync.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -30,7 +32,8 @@
     "react-dom": "19.2.4",
     "react-leaflet": "^5.0.0",
     "recharts": "^3.8.1",
-    "sharp": "^0.35.2"
+    "sharp": "^0.35.2",
+    "typesense": "^3.0.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

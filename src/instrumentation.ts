@@ -1,22 +1,23 @@
 import type { Instrumentation } from "next";
 
-function mysqlEnvConfigured(): boolean {
-  return Boolean(
-    process.env.MYSQL_HOST &&
-      process.env.MYSQL_USER &&
-      process.env.MYSQL_DATABASE &&
-      process.env.MYSQL_HOST !== "disabled"
-  );
-}
-
-/** Load `.env.production` for any vars missing from hPanel (e.g. MYSQL_*). */
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
-  if (process.env.AUTH_SECRET && mysqlEnvConfigured()) return;
 
-  const { config } = await import("dotenv");
-  const { resolve } = await import("node:path");
-  config({ path: resolve(process.cwd(), ".env.production") });
+  try {
+    const { config } = await import("dotenv");
+    const { resolve } = await import("node:path");
+    const cwd = process.cwd();
+
+    if (process.env.NODE_ENV === "development") {
+      // Local dev: .env.local only (Next.js also loads it; avoid .env.production overriding AUTH_URL etc.)
+      config({ path: resolve(cwd, ".env.local") });
+    } else {
+      // Production: bootstrap from bundled .env.production (overrides hPanel if malformed)
+      config({ path: resolve(cwd, ".env.production"), override: true });
+    }
+  } catch {
+    // dotenv/path unavailable — env must come from hPanel
+  }
 }
 
 /**

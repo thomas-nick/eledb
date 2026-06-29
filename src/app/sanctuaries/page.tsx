@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { Container } from "@/components/ui/Container";
 import { ExplorePageHeader } from "@/components/layout/ExplorePageHeader";
 import { SanctuaryCard } from "@/components/sanctuaries/SanctuaryCard";
@@ -34,11 +34,28 @@ const welfareLabels: { key: keyof Sanctuary["welfare"]; label: string }[] = [
 ];
 
 export default function SanctuariesPage() {
+  const detailPanelRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState("");
   const [experienceFilter, setExperienceFilter] = useState<ExperienceType | "all">("all");
   const [countryFilter, setCountryFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [selected, setSelected] = useState<Sanctuary | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const country = params.get("country");
+    if (country) setCountryFilter(country);
+  }, []);
+
+  function handleSelect(sanctuary: Sanctuary) {
+    setSelected(sanctuary);
+    requestAnimationFrame(() => {
+      const isMobile = window.matchMedia("(max-width: 1023px)").matches;
+      if (isMobile) {
+        detailPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    });
+  }
 
   const countries = useMemo(
     () => [...new Set(sanctuaries.map((s) => s.country))].sort(),
@@ -120,33 +137,54 @@ export default function SanctuariesPage() {
               )}
 
               <div className="flex flex-col sm:flex-row flex-wrap gap-4">
-                <input
-                  type="search"
-                  placeholder="Search by name, region, country..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="flex-1 min-w-[200px] px-4 py-3 rounded-xl border border-border bg-card text-forest placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-forest/20"
-                />
-                <select
-                  value={experienceFilter}
-                  onChange={(e) => setExperienceFilter(e.target.value as ExperienceType | "all")}
-                  className="px-4 py-3 rounded-xl border border-border bg-card text-forest focus:outline-none focus:ring-2 focus:ring-forest/20"
-                >
-                  <option value="all">All Experiences</option>
-                  {Object.entries(experienceTypeLabels).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
-                  ))}
-                </select>
-                <select
-                  value={sourceFilter}
-                  onChange={(e) => setSourceFilter(e.target.value)}
-                  className="px-4 py-3 rounded-xl border border-border bg-card text-forest focus:outline-none focus:ring-2 focus:ring-forest/20"
-                >
-                  <option value="all">External assessments</option>
-                  {dataSources.map((s) => (
-                    <option key={s.id} value={s.id}>{s.shortName}</option>
-                  ))}
-                </select>
+                <div className="flex-1 min-w-[200px]">
+                  <label htmlFor="sanctuary-search" className="sr-only">
+                    Search sanctuaries
+                  </label>
+                  <input
+                    id="sanctuary-search"
+                    type="search"
+                    placeholder="Search by name, region, country..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    aria-label="Search sanctuaries"
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-card text-forest placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-forest/20"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="sanctuary-experience" className="sr-only">
+                    Filter by experience type
+                  </label>
+                  <select
+                    id="sanctuary-experience"
+                    value={experienceFilter}
+                    onChange={(e) => setExperienceFilter(e.target.value as ExperienceType | "all")}
+                    aria-label="Filter by experience type"
+                    className="w-full sm:w-auto px-4 py-3 rounded-xl border border-border bg-card text-forest focus:outline-none focus:ring-2 focus:ring-forest/20"
+                  >
+                    <option value="all">All Experiences</option>
+                    {Object.entries(experienceTypeLabels).map(([key, label]) => (
+                      <option key={key} value={key}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="sanctuary-source" className="sr-only">
+                    Filter by external assessment
+                  </label>
+                  <select
+                    id="sanctuary-source"
+                    value={sourceFilter}
+                    onChange={(e) => setSourceFilter(e.target.value)}
+                    aria-label="Filter by external assessment"
+                    className="w-full sm:w-auto px-4 py-3 rounded-xl border border-border bg-card text-forest focus:outline-none focus:ring-2 focus:ring-forest/20"
+                  >
+                    <option value="all">External assessments</option>
+                    {dataSources.map((s) => (
+                      <option key={s.id} value={s.id}>{s.shortName}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <p className="text-sm text-muted">
@@ -158,7 +196,7 @@ export default function SanctuariesPage() {
                   <SanctuaryCard
                     key={sanctuary.id}
                     sanctuary={sanctuary}
-                    onSelect={setSelected}
+                    onSelect={handleSelect}
                   />
                 ))}
               </div>
@@ -170,7 +208,7 @@ export default function SanctuariesPage() {
               )}
             </div>
 
-            <div className="space-y-6">
+            <div ref={detailPanelRef} className="space-y-6 lg:sticky lg:top-24 lg:self-start">
               <ExperienceFinder />
 
               {selected && (

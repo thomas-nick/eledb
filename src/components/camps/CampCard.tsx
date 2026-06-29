@@ -9,7 +9,10 @@ interface CampCardProps {
 
 export function CampCard({ location }: CampCardProps) {
   return (
-    <Link href={`/camps/${location.id}`}>
+    <Link
+      href={`/camps/${location.id}`}
+      className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest focus-visible:ring-offset-2 rounded-xl"
+    >
       <Card hover className="h-full">
         <div className="flex items-start justify-between gap-2 mb-2">
           <h3 className="font-serif text-lg font-bold text-forest leading-snug">

@@ -22,7 +22,7 @@ const footerLinks = {
 export function Footer() {
   return (
     <footer className="bg-forest text-ivory mt-auto">
-      <Container className="py-16">
+      <Container size="wide" className="py-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           <div className="md:col-span-2">
             <div className="mb-4">
@@ -62,10 +62,10 @@ export function Footer() {
         </div>
 
         <div className="mt-12 pt-8 border-t border-ivory/10 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-ivory/50 text-sm">
+          <p className="text-ivory/70 text-sm">
             &copy; {new Date().getFullYear()} {SITE_NAME}. All rights reserved.
           </p>
-          <p className="text-ivory/50 text-sm">
+          <p className="text-ivory/70 text-sm">
             Revered across Asia. Respected in context.
           </p>
         </div>
