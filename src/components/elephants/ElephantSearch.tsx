@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { ElephantCard } from "@/components/elephants/ElephantCard";
 import { ElephantAttribution } from "@/components/elephants/ElephantAttribution";
@@ -18,6 +18,12 @@ import type { LocationSummary } from "@/types/location";
 import { cn } from "@/lib/utils";
 import { track } from "@/lib/analytics";
 import { categoryLabels, facetLabel, subspeciesLabels } from "@/lib/elephantLabels";
+import { useGlobalSearch } from "@/hooks/useGlobalSearch";
+import {
+  SearchDropdown,
+  buildSearchDropdownItems,
+  type SearchDropdownItem,
+} from "@/components/search/SearchDropdown";
 
 const statusOptions: { value: ElephantStatus | "all"; label: string }[] = [
   { value: "all", label: "All" },
@@ -73,6 +79,17 @@ export function ElephantSearch() {
   const [campChips, setCampChips] = useState<LocationSummary[]>([]);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const filtersPanelId = "elephant-filters-panel";
+  const [typeaheadOpen, setTypeaheadOpen] = useState(false);
+  const [typeaheadActive, setTypeaheadActive] = useState(0);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const typeaheadListId = "elephant-typeahead-listbox";
+
+  const { result: typeaheadResult, loading: typeaheadLoading, error: typeaheadError } =
+    useGlobalSearch(query, { limit: 5, minLength: 2 });
+  const typeaheadItems = buildSearchDropdownItems(typeaheadResult, query);
+  const showTypeahead =
+    query.trim().length >= 2 &&
+    (typeaheadLoading || typeaheadItems.length > 0 || Boolean(typeaheadError));
 
   const country = searchParams.get("country") ?? "";
   const status = (searchParams.get("status") as ElephantStatus | null) ?? "";
@@ -147,6 +164,38 @@ export function ElephantSearch() {
     router.replace(pathname, { scroll: false });
     setQuery("");
   }, [pathname, router]);
+
+  const goTypeahead = useCallback(
+    (item: SearchDropdownItem) => {
+      track("search_select", { source: "database_typeahead", kind: item.kind });
+      setTypeaheadOpen(false);
+      if (item.kind === "all") {
+        updateParams({ q: query.trim() || null });
+      } else {
+        router.push(item.href);
+      }
+    },
+    [router, query, updateParams]
+  );
+
+  useEffect(() => {
+    if (showTypeahead) setTypeaheadOpen(true);
+  }, [showTypeahead]);
+
+  useEffect(() => {
+    setTypeaheadActive(0);
+  }, [typeaheadResult]);
+
+  useEffect(() => {
+    if (!typeaheadOpen) return;
+    function onClick(e: MouseEvent) {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setTypeaheadOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [typeaheadOpen]);
 
   useEffect(() => {
     if (!filtersOpen) return;
@@ -294,7 +343,7 @@ export function ElephantSearch() {
       <section className="sticky top-16 z-20 border-b border-slate-200 bg-white/95 backdrop-blur-sm">
         <Container size="wide" className="py-3">
           <div className="flex flex-col sm:flex-row gap-2.5">
-            <div className="relative flex-1">
+            <div ref={searchContainerRef} className="relative flex-1">
               <svg
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
                 fill="none"
@@ -313,11 +362,56 @@ export function ElephantSearch() {
                 id="elephant-search-input"
                 type="search"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  if (e.target.value.trim().length >= 2) setTypeaheadOpen(true);
+                }}
+                onFocus={() => showTypeahead && setTypeaheadOpen(true)}
+                onKeyDown={(e) => {
+                  if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    setTypeaheadOpen(true);
+                    setTypeaheadActive((a) => Math.min(a + 1, Math.max(typeaheadItems.length - 1, 0)));
+                  } else if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    setTypeaheadActive((a) => Math.max(a - 1, 0));
+                  } else if (e.key === "Enter" && typeaheadOpen && typeaheadItems[typeaheadActive]) {
+                    e.preventDefault();
+                    goTypeahead(typeaheadItems[typeaheadActive]);
+                  } else if (e.key === "Escape") {
+                    setTypeaheadOpen(false);
+                  }
+                }}
                 placeholder="Search name, camp, country, chip ID, parent..."
                 aria-label="Search elephants"
-                className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest"
+                aria-expanded={typeaheadOpen && showTypeahead}
+                aria-controls={typeaheadListId}
+                aria-autocomplete="list"
+                autoComplete="off"
+                className="w-full pl-9 pr-10 py-2.5 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest"
               />
+              {typeaheadLoading && (
+                <span
+                  className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-forest"
+                  aria-hidden
+                />
+              )}
+              {showTypeahead && typeaheadOpen && (
+                <div className="absolute left-0 right-0 z-50 mt-1 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
+                  <div className="max-h-[22rem] overflow-y-auto py-1.5">
+                    <SearchDropdown
+                      items={typeaheadItems}
+                      active={typeaheadActive}
+                      query={query}
+                      loading={typeaheadLoading}
+                      error={typeaheadError}
+                      listboxId={typeaheadListId}
+                      onHover={setTypeaheadActive}
+                      onSelect={goTypeahead}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
             <select
               value={sort}

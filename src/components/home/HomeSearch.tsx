@@ -31,6 +31,8 @@ export function HomeSearch() {
 
   const items = buildSearchDropdownItems(result, query);
   const hasResults = items.length > 0;
+  const showDropdown =
+    query.trim().length >= 2 && (loading || hasResults || Boolean(error));
 
   const go = useCallback(
     (item: SearchDropdownItem) => {
@@ -56,8 +58,8 @@ export function HomeSearch() {
   }
 
   useEffect(() => {
-    if (hasResults) setOpen(true);
-  }, [hasResults]);
+    if (hasResults || loading || error) setOpen(true);
+  }, [hasResults, loading, error]);
 
   useEffect(() => {
     setActive(0);
@@ -120,7 +122,10 @@ export function HomeSearch() {
             id="home-search-input"
             type="search"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              if (e.target.value.trim().length >= 2) setOpen(true);
+            }}
             onFocus={() => hasResults && setOpen(true)}
             onKeyDown={onInputKeyDown}
             placeholder="Search by name, camp, country, or chip ID…"
@@ -148,8 +153,8 @@ export function HomeSearch() {
         </button>
       </form>
 
-      {open && query.trim().length >= 2 && (
-        <div className="absolute left-0 right-0 z-30 mt-2 overflow-hidden rounded-lg border border-slate-200 bg-white text-left shadow-xl sm:right-[7.5rem]">
+      {showDropdown && (
+        <div className="absolute left-0 right-0 z-50 mt-2 overflow-hidden rounded-lg border border-slate-200 bg-white text-left shadow-xl sm:right-[7.5rem]">
           <div className="max-h-[22rem] overflow-y-auto py-1.5">
             <SearchDropdown
               items={items}

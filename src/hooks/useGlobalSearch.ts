@@ -4,9 +4,30 @@ import { useEffect, useState } from "react";
 import { isBrowserTypesenseConfigured, globalSearchBrowser } from "@/lib/typesense-browser";
 import type { GlobalSearchResult } from "@/lib/typesense-search";
 
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error("timeout")), ms);
+    }),
+  ]);
+}
+
+async function searchViaApi(
+  query: string,
+  limit: number,
+  signal: AbortSignal
+): Promise<GlobalSearchResult> {
+  const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=${limit}`, {
+    signal,
+  });
+  if (!res.ok) throw new Error("Search request failed");
+  return res.json() as Promise<GlobalSearchResult>;
+}
+
 /**
  * Debounced federated search for typeahead surfaces.
- * Uses the browser Typesense client when configured (fastest); otherwise /api/search.
+ * Races browser Typesense (fast) against /api/search (reliable fallback).
  */
 export function useGlobalSearch(
   query: string,
@@ -36,23 +57,24 @@ export function useGlobalSearch(
 
     const timer = setTimeout(async () => {
       try {
+        const apiPromise = searchViaApi(q, limit, controller.signal);
+
         if (useBrowser) {
-          try {
-            const data = await globalSearchBrowser(q, limit);
-            if (!cancelled) {
-              setResult(data);
-              setError(null);
-            }
-            return;
-          } catch {
-            // Search-only key invalid or CORS — fall through to server API
+          const browserPromise = withTimeout(globalSearchBrowser(q, limit), 2000).catch(
+            () => null
+          );
+          const data = await Promise.race([
+            browserPromise.then((d) => (d ? d : apiPromise)),
+            apiPromise,
+          ]);
+          if (!cancelled) {
+            setResult(data);
+            setError(null);
           }
+          return;
         }
-        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&limit=${limit}`, {
-          signal: controller.signal,
-        });
-        if (!res.ok) throw new Error("Search request failed");
-        const data = (await res.json()) as GlobalSearchResult;
+
+        const data = await apiPromise;
         if (!cancelled) {
           setResult(data);
           setError(null);
