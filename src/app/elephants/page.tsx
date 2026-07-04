@@ -1,13 +1,14 @@
 import { Suspense } from "react";
-import type { Metadata } from "next";
 import { ElephantSearch } from "@/components/elephants/ElephantSearch";
 import { ExplorePageHeader } from "@/components/layout/ExplorePageHeader";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: "Elephant Database",
   description:
-    "Search named Asian elephants — births, transfers, parentage, and camp history. Data from elephant.se, reformatted for easy browsing.",
-};
+    "Search named Asian elephants — births, transfers, parentage, and camp history. Data from elephant.se, reformatted for easy browsing across 13 range countries.",
+  path: "/elephants",
+});
 
 export default function ElephantsPage() {
   return (

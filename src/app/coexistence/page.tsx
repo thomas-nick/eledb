@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import { Container } from "@/components/ui/Container";
 import { ExplorePageHeader } from "@/components/layout/ExplorePageHeader";
 import { RangeMap } from "@/components/map/RangeMap";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Range Map",
+export const metadata: Metadata = pageMetadata({
+  title: "Asian Elephant Range Map",
   description:
-    "Where wild Asian elephants still roam — 13 range states, migration corridors, and coexistence hotspots across South and Southeast Asia.",
-};
+    "Interactive map of where wild Asian elephants still roam — 13 range states, migration corridors, and coexistence hotspots.",
+  path: "/coexistence",
+});
 
 const rangeStats = [
   { value: "13", label: "Range states", sub: "South & Southeast Asia" },

@@ -7,12 +7,14 @@ import { Button } from "@/components/ui/Button";
 import { rangeStates, totalPopulation } from "@/data/rangeStates";
 import { sanctuaries } from "@/data/sanctuaries";
 import { formatNumber } from "@/lib/utils";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "About",
+export const metadata: Metadata = pageMetadata({
+  title: "About mahoot",
   description:
-    "A fan resource for Asian elephants — culture, travel, corridors, and sanctuaries across Thailand, Cambodia, and 13 range states.",
-};
+    "mahoot is an independent fan resource for Asian elephants — culture, travel, wild corridors, and sanctuaries across Thailand, Cambodia, and 13 range states.",
+  path: "/about",
+});
 
 export default function AboutPage() {
   return (

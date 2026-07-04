@@ -5,12 +5,14 @@ import { ExplorePageHeader } from "@/components/layout/ExplorePageHeader";
 import { CorridorCard } from "@/components/corridors/CorridorCard";
 import { DnaExplainer } from "@/components/corridors/DnaExplainer";
 import { corridors } from "@/data/corridors";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Wild Corridors & Elephant Genetics",
   description:
     "Critical land bridges between fragmented wild elephant populations — plus an honest guide to Thailand's microchip/DNA systems and what data is actually public.",
-};
+  path: "/corridors",
+});
 
 export default function CorridorsPage() {
   return (

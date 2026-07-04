@@ -5,12 +5,14 @@ import { ExplorePageHeader } from "@/components/layout/ExplorePageHeader";
 import { getCountryIndexData, type CountryIndexItem } from "@/lib/countries";
 import { getCountryTheme, COUNTRY_MAP_VIEWBOX } from "@/data/countryMeta";
 import { mapPaths } from "@/data/mapGeometry";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Range States",
+export const metadata: Metadata = pageMetadata({
+  title: "Asian Elephant Range States",
   description:
-    "Dedicated hubs for all 13 Asian elephant range states — wild population context, database records, camps, and field stories.",
-};
+    "Country hubs for all 13 Asian elephant range states — wild population context, database records, camps, corridors, and field stories.",
+  path: "/countries",
+});
 
 export const dynamic = "force-dynamic";
 

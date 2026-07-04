@@ -6,12 +6,14 @@ import { ExplorePageHeader } from "@/components/layout/ExplorePageHeader";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { articles, categoryLabels } from "@/data/articles";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Field Notes",
+export const metadata: Metadata = pageMetadata({
+  title: "Field Notes & Resources",
   description:
-    "Field notes, science, and community stories from across Asia's elephant range states.",
-};
+    "Field notes, conservation science, and community stories from across Asia's elephant range states.",
+  path: "/resources",
+});
 
 export default function ResourcesPage() {
   return (

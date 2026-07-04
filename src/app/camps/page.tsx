@@ -5,6 +5,14 @@ import { ExplorePageHeader } from "@/components/layout/ExplorePageHeader";
 import { CampCard } from "@/components/camps/CampCard";
 import { listLocations } from "@/lib/locations";
 import { CampsSearchBar } from "@/components/camps/CampsSearchBar";
+import { pageMetadata } from "@/lib/seo";
+
+export const metadata = pageMetadata({
+  title: "Elephant Camps & Locations",
+  description:
+    "Browse elephant camps and facilities across Asia — linked to named elephant records and our curated sanctuary directory.",
+  path: "/camps",
+});
 
 const rangeCountries = [
   "Thailand",
