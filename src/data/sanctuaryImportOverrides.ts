@@ -13,9 +13,12 @@ export const manualElephantIdOverrides: Record<string, string> = {
   "elephant-nature-park:mae-baitoey-แม่ใบเตย": "4366",
   "elephant-nature-park:kaavan": "2269",
 
-  // Phuket
+  // Phuket — spelling / location mismatches on elephant.se
   "phuket-elephant-sanctuary:ampan": "5404",
   "phuket-elephant-sanctuary:fah-mui": "11844",
+  "phuket-elephant-sanctuary:sri-nual": "11769",
+  "phuket-elephant-sanctuary:dee-lerd": "11752",
+  "phuket-elephant-sanctuary:sroy-fah": "11434",
 
   // Wildlife SOS
   "wildlife-sos:phoolkali": "13307",
