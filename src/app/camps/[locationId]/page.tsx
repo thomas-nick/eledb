@@ -194,7 +194,12 @@ export default async function CampPage({ params }: CampPageProps) {
                       </Badge>
                     ))}
                   </div>
-                  <h3 className="font-serif text-xl font-bold text-forest mb-1">{s.name}</h3>
+                  <Link
+                    href={`/sanctuaries?s=${encodeURIComponent(s.id)}`}
+                    className="font-serif text-xl font-bold text-forest hover:text-clay transition-colors mb-1 inline-block"
+                  >
+                    {s.name}
+                  </Link>
                   <p className="text-sm text-muted mb-3">
                     {s.region}, {s.country}
                   </p>

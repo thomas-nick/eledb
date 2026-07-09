@@ -260,9 +260,21 @@ export default function SanctuariesPage() {
                           </Badge>
                         ))}
                       </div>
-                      <h3 className="font-serif text-xl font-bold text-forest">
-                        {selected.name}
-                      </h3>
+                      {getLocationIdForSanctuary(selected.id) ? (
+                        <Link
+                          href={`/camps/${getLocationIdForSanctuary(selected.id)}#herd`}
+                          className="font-serif text-xl font-bold text-forest hover:text-clay transition-colors"
+                        >
+                          {selected.name}
+                        </Link>
+                      ) : (
+                        <Link
+                          href={`/elephants?q=${encodeURIComponent(selected.name)}&country=${encodeURIComponent(selected.country)}`}
+                          className="font-serif text-xl font-bold text-forest hover:text-clay transition-colors"
+                        >
+                          {selected.name}
+                        </Link>
+                      )}
                       <p className="text-sm text-muted">{selected.region}, {selected.country}</p>
                     </div>
                     <button
