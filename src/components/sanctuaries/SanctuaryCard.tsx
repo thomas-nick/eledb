@@ -12,6 +12,7 @@ import Link from "next/link";
 
 interface SanctuaryCardProps {
   sanctuary: Sanctuary;
+  elephantCount?: number;
   onSelect?: (sanctuary: Sanctuary) => void;
 }
 
@@ -24,7 +25,7 @@ const welfareLabels: { key: keyof Sanctuary["welfare"]; label: string }[] = [
   { key: "spaciousEnclosure", label: "Spacious" },
 ];
 
-export function SanctuaryCard({ sanctuary, onSelect }: SanctuaryCardProps) {
+export function SanctuaryCard({ sanctuary, elephantCount, onSelect }: SanctuaryCardProps) {
   const elephantSeUrl = elephantSeFacilityUrl(sanctuary);
   const locationId = getLocationIdForSanctuary(sanctuary.id);
 
@@ -102,7 +103,9 @@ export function SanctuaryCard({ sanctuary, onSelect }: SanctuaryCardProps) {
               onClick={(e) => e.stopPropagation()}
               className="text-clay hover:text-forest font-medium whitespace-nowrap transition-colors"
             >
-              Elephants →
+              {elephantCount != null && elephantCount > 0
+                ? `${elephantCount.toLocaleString()} elephants →`
+                : "Elephants →"}
             </Link>
           )}
           <a

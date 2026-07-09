@@ -613,6 +613,29 @@ export async function countElephantsMysql(): Promise<number> {
   return Number(rows[0]?.total ?? 0);
 }
 
+/** Living + deceased counts per elephant.se location_id (for sanctuary directory). */
+export async function getElephantCountsByLocationIds(
+  locationIds: string[]
+): Promise<Record<string, number>> {
+  const counts: Record<string, number> = {};
+  if (!locationIds.length) return counts;
+
+  const db = getMysqlPool();
+  const placeholders = locationIds.map(() => "?").join(", ");
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT location_id, COUNT(*) AS total
+     FROM elephants
+     WHERE location_id IN (${placeholders})
+     GROUP BY location_id`,
+    locationIds
+  );
+
+  for (const row of rows) {
+    counts[String(row.location_id)] = Number(row.total);
+  }
+  return counts;
+}
+
 interface LocationRow extends RowDataPacket {
   location_id: string;
   location_name: string;

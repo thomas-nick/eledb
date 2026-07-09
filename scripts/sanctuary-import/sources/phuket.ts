@@ -81,7 +81,7 @@ export const phuketSource: SanctuaryImportSource = {
 
 function parsePhuketContent(
   $: CheerioAPI,
-  root: cheerio.Cheerio<cheerio.Element>
+  root: ReturnType<CheerioAPI>
 ): { blocks: string[]; rescueDate?: string } {
   const blocks: string[] = [];
   let rescueDate: string | undefined;
@@ -109,7 +109,7 @@ function parsePhuketContent(
 
 function extractPhuketPhoto(
   $: CheerioAPI,
-  root: cheerio.Cheerio<cheerio.Element>,
+  root: ReturnType<CheerioAPI>,
   slug: string
 ): EnrichmentPhoto[] | undefined {
   const row = root.closest(".multi-col-row, .grid");

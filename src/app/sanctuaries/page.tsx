@@ -40,6 +40,20 @@ export default function SanctuariesPage() {
   const [countryFilter, setCountryFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [selected, setSelected] = useState<Sanctuary | null>(null);
+  const [elephantCounts, setElephantCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/sanctuaries/stats")
+      .then((res) => res.json())
+      .then((data: { counts?: Record<string, number> }) => {
+        if (active && data.counts) setElephantCounts(data.counts);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -196,6 +210,7 @@ export default function SanctuariesPage() {
                   <SanctuaryCard
                     key={sanctuary.id}
                     sanctuary={sanctuary}
+                    elephantCount={elephantCounts[sanctuary.id]}
                     onSelect={handleSelect}
                   />
                 ))}
@@ -283,12 +298,22 @@ export default function SanctuariesPage() {
                   </a>
 
                   {getLocationIdForSanctuary(selected.id) ? (
-                    <Link
-                      href={`/camps/${getLocationIdForSanctuary(selected.id)}`}
-                      className="text-sm text-clay hover:text-forest transition-colors mb-4 inline-block mr-4"
-                    >
-                      Camp profile &amp; named elephants &rarr;
-                    </Link>
+                    <>
+                      {elephantCounts[selected.id] != null && elephantCounts[selected.id] > 0 && (
+                        <p className="text-sm text-muted mb-3">
+                          <span className="font-medium text-forest">
+                            {elephantCounts[selected.id].toLocaleString()} named elephants
+                          </span>{" "}
+                          in the mahoot database from elephant.se at this camp.
+                        </p>
+                      )}
+                      <Link
+                        href={`/camps/${getLocationIdForSanctuary(selected.id)}`}
+                        className="text-sm text-clay hover:text-forest transition-colors mb-4 inline-block mr-4"
+                      >
+                        Camp profile &amp; named elephants &rarr;
+                      </Link>
+                    </>
                   ) : (
                     <Link
                       href={`/elephants?q=${encodeURIComponent(selected.name)}&country=${encodeURIComponent(selected.country)}`}

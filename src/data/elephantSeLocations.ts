@@ -28,7 +28,18 @@ export const sanctuaryLocationMap: Record<string, string> = {
   "krabi-roaming": "4046",
   "gvi-chiang-mai": "1871",
   "ejs-phuket": "3962",
+  "ejs-chiang-mai-7": "3962",
+  "ejs-pattaya": "3962",
+  "ejs-samui": "3962",
   "yok-don-elephant-project": "2169",
+  "thai-elephant-conservation-center": "529",
+  "thai-elephant-home": "1921",
+  "khao-sok-elephant-sanctuary": "4048",
+  "phangan-elephant": "4072",
+  "elephants-world": "2002",
+  "phuket-elephant-conservation": "2665",
+  "phuket-elephant-care-naithon": "4064",
+  "phuket-elephant-care-loch-palm": "4064",
 
   // Laos & Cambodia
   "laos-elephant-conservation-centre": "2077",
@@ -36,6 +47,8 @@ export const sanctuaryLocationMap: Record<string, string> = {
   "mekong-elephant-park": "2791",
   "kulen-elephant-forest": "2975",
   "cambodia-elephant-sanctuary-sr": "1362",
+  "mondulkiri-project": "3015",
+  "cambodia-wildlife-sanctuary": "2118",
 
   // Nepal & India
   "tiger-tops-tharu": "2763",
