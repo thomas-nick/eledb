@@ -1,16 +1,22 @@
 /**
  * Links curated sanctuary directory entries to elephant.se location_id values.
  * IDs verified against synced MySQL location_name groupings.
+ *
+ * Only map when the sanctuary is the same physical facility as the elephant.se
+ * location. Do NOT map similarly named but distinct camps to the same ID —
+ * that makes unrelated places show the same herd.
  */
 export const sanctuaryLocationMap: Record<string, string> = {
   // Thailand
   "elephant-nature-park": "174",
   "patara-elephant": "1251",
   "boon-lott": "1562",
+  // Same facility: GTAEF / Anantara Golden Triangle Elephant Camp
   "golden-triangle": "1282",
   "anantara-golden-triangle": "1282",
   "phuket-elephant-sanctuary": "2665",
-  "green-elephant-phuket": "2665",
+  // green-elephant-phuket + phuket-elephant-conservation are DIFFERENT camps —
+  // do not map them to 2665 (Phuket Elephant Sanctuary).
   "wildlife-friends-thailand": "2010",
   "hidden-forest-reserve": "3986",
   "samui-elephant-sanctuary": "2782",
@@ -27,19 +33,16 @@ export const sanctuaryLocationMap: Record<string, string> = {
   "ao-nang-elephant-sanctuary": "4023",
   "krabi-roaming": "4046",
   "gvi-chiang-mai": "1871",
+  // EJS has separate camps; elephant.se only has a generic "Elephant Jungle Sanctuary"
+  // record (#3962, 1 elephant). Keep Phuket only until per-camp IDs exist.
   "ejs-phuket": "3962",
-  "ejs-chiang-mai-7": "3962",
-  "ejs-pattaya": "3962",
-  "ejs-samui": "3962",
   "yok-don-elephant-project": "2169",
   "thai-elephant-conservation-center": "529",
   "thai-elephant-home": "1921",
   "khao-sok-elephant-sanctuary": "4048",
   "phangan-elephant": "4072",
   "elephants-world": "2002",
-  "phuket-elephant-conservation": "2665",
-  "phuket-elephant-care-naithon": "4064",
-  "phuket-elephant-care-loch-palm": "4064",
+  // phuket-elephant-care-* are separate sites; Siray (#4064) is not a confident match.
 
   // Laos & Cambodia
   "laos-elephant-conservation-centre": "2077",
