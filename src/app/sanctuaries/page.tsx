@@ -335,7 +335,7 @@ export default function SanctuariesPage() {
                           href={`/camps/${getLocationIdForSanctuary(selected.id)}`}
                           className="inline-flex items-center rounded-lg bg-forest px-4 py-2 text-sm font-medium text-ivory hover:bg-forest-light transition-colors"
                         >
-                          View camp &amp; elephants →
+                          View herd &amp; camp →
                         </Link>
                         <Link
                           href={`/elephants?locationId=${getLocationIdForSanctuary(selected.id)}&locationName=${encodeURIComponent(selected.name)}&status=living`}

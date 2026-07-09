@@ -69,10 +69,10 @@ export function ElephantDetailPanels({ elephant, linkedSanctuaries }: ElephantDe
               Camp profile →
             </Link>
             <Link
-              href={`/elephants?locationId=${elephant.locationId}&locationName=${encodeURIComponent(elephant.locationName)}&status=living`}
+              href={`/camps/${elephant.locationId}#herd`}
               className="inline-flex items-center gap-2 text-sm font-medium text-clay hover:text-forest transition-colors"
             >
-              All elephants here →
+              View herd →
             </Link>
           </div>
         )}

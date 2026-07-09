@@ -33,10 +33,10 @@ export function ElephantHerdSection({ elephant, herdMates }: ElephantHerdSection
         </div>
         {elephant.locationId && (
           <Link
-            href={`/elephants?locationId=${elephant.locationId}&locationName=${encodeURIComponent(elephant.locationName)}&status=living`}
+            href={`/camps/${elephant.locationId}#herd`}
             className="text-sm font-medium text-clay hover:text-forest transition-colors whitespace-nowrap"
           >
-            Browse all at camp →
+            Camp herd page →
           </Link>
         )}
       </div>
@@ -57,7 +57,7 @@ export function ElephantHerdSection({ elephant, herdMates }: ElephantHerdSection
         <p className="mt-4 text-sm text-muted">
           Showing {DISPLAY_LIMIT} of {namedMates.length}.{" "}
           <Link
-            href={`/elephants?locationId=${elephant.locationId}&locationName=${encodeURIComponent(elephant.locationName)}&status=living`}
+            href={`/camps/${elephant.locationId}#herd`}
             className="text-clay hover:text-forest font-medium"
           >
             See full herd →

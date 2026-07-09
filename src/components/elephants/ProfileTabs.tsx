@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
@@ -22,6 +22,13 @@ interface ProfileTabsProps {
   defaultTab?: ProfileTabId;
 }
 
+function tabFromHash(): ProfileTabId | null {
+  if (typeof window === "undefined") return null;
+  const hash = window.location.hash.replace(/^#/, "");
+  if (tabs.some((t) => t.id === hash)) return hash as ProfileTabId;
+  return null;
+}
+
 export function ProfileTabs({
   overview,
   lineage,
@@ -33,6 +40,25 @@ export function ProfileTabs({
   const [active, setActive] = useState<ProfileTabId>(defaultTab);
   const baseId = useId();
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  useEffect(() => {
+    const fromHash = tabFromHash();
+    if (fromHash) setActive(fromHash);
+
+    function onHashChange() {
+      const next = tabFromHash();
+      if (next) setActive(next);
+    }
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
+  function selectTab(id: ProfileTabId) {
+    setActive(id);
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", `#${id}`);
+    }
+  }
 
   const panels: Record<ProfileTabId, React.ReactNode> = {
     overview,
@@ -64,7 +90,7 @@ export function ProfileTabs({
       return;
     }
     const tab = tabs[next];
-    setActive(tab.id);
+    selectTab(tab.id);
     focusTab(next);
   }
 
@@ -92,7 +118,7 @@ export function ProfileTabs({
                 aria-selected={isActive}
                 aria-controls={panelId}
                 tabIndex={isActive ? 0 : -1}
-                onClick={() => setActive(tab.id)}
+                onClick={() => selectTab(tab.id)}
                 onKeyDown={(e) => onTabKeyDown(e, index)}
                 className={cn(
                   "whitespace-nowrap px-4 py-2.5 text-sm font-medium border-b-2 transition-colors",

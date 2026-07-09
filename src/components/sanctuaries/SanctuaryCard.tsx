@@ -26,7 +26,7 @@ const welfareLabels: { key: keyof Sanctuary["welfare"]; label: string }[] = [
   { key: "spaciousEnclosure", label: "Spacious" },
 ];
 
-function primaryHref(sanctuary: Sanctuary, locationId?: string): string {
+function herdHref(sanctuary: Sanctuary, locationId?: string): string {
   if (locationId) return `/camps/${locationId}`;
   return `/elephants?q=${encodeURIComponent(sanctuary.name)}&country=${encodeURIComponent(sanctuary.country)}`;
 }
@@ -39,36 +39,39 @@ export function SanctuaryCard({
 }: SanctuaryCardProps) {
   const elephantSeUrl = elephantSeFacilityUrl(sanctuary);
   const locationId = getLocationIdForSanctuary(sanctuary.id);
-  const elephantsHref = primaryHref(sanctuary, locationId);
+  const herdUrl = herdHref(sanctuary, locationId);
 
   return (
     <Card
       hover
       className={
         selected
-          ? "cursor-pointer ring-2 ring-forest/40 border-forest/30"
-          : "cursor-pointer"
+          ? "ring-2 ring-forest/40 border-forest/30"
+          : undefined
       }
-      onClick={() => onSelect?.(sanctuary)}
     >
-      <div className="mb-3">
-        <h3 className="font-serif text-xl font-bold text-forest">{sanctuary.name}</h3>
-        <p className="text-sm text-muted">
-          {sanctuary.region}, {sanctuary.country}
+      <Link href={herdUrl} className="block group">
+        <div className="mb-3">
+          <h3 className="font-serif text-xl font-bold text-forest group-hover:text-clay transition-colors">
+            {sanctuary.name}
+          </h3>
+          <p className="text-sm text-muted">
+            {sanctuary.region}, {sanctuary.country}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {sanctuary.experienceTypes.map((type) => (
+            <Badge key={type} variant={experienceTypeVariants[type]} className="text-[10px]">
+              {experienceTypeLabels[type]}
+            </Badge>
+          ))}
+        </div>
+
+        <p className="text-sm text-muted leading-relaxed line-clamp-2 mb-3">
+          {sanctuary.description}
         </p>
-      </div>
-
-      <div className="flex flex-wrap gap-1.5 mb-3">
-        {sanctuary.experienceTypes.map((type) => (
-          <Badge key={type} variant={experienceTypeVariants[type]} className="text-[10px]">
-            {experienceTypeLabels[type]}
-          </Badge>
-        ))}
-      </div>
-
-      <p className="text-sm text-muted leading-relaxed line-clamp-2 mb-3">
-        {sanctuary.description}
-      </p>
+      </Link>
 
       {sanctuary.externalRatings && sanctuary.externalRatings.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-3">
@@ -89,7 +92,7 @@ export function SanctuaryCard({
         </div>
       )}
 
-      <details className="group" onClick={(e) => e.stopPropagation()}>
+      <details className="group">
         <summary className="text-xs text-muted cursor-pointer hover:text-forest list-none flex items-center gap-1">
           <span className="group-open:rotate-90 transition-transform inline-block">›</span>
           Welfare reference (Western NGO criteria)
@@ -110,29 +113,36 @@ export function SanctuaryCard({
         </div>
       </details>
 
-      <div className="flex items-center justify-between gap-3 mt-4 pt-4 border-t border-border text-xs text-muted flex-wrap">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-3 mt-4 pt-4 border-t border-border text-xs flex-wrap">
+        <div className="flex items-center gap-3 text-muted">
           <span>Capacity: {sanctuary.visitorCapacity}</span>
           <span>&middot;</span>
           <span>Price: {sanctuary.priceRange}</span>
         </div>
         <div className="flex items-center gap-3">
+          {onSelect && (
+            <button
+              type="button"
+              onClick={() => onSelect(sanctuary)}
+              className="text-muted hover:text-forest font-medium whitespace-nowrap transition-colors"
+            >
+              About
+            </button>
+          )}
           <Link
-            href={elephantsHref}
-            onClick={(e) => e.stopPropagation()}
+            href={herdUrl}
             className="text-clay hover:text-forest font-medium whitespace-nowrap transition-colors"
           >
             {elephantCount != null && elephantCount > 0
-              ? `${elephantCount.toLocaleString()} elephants →`
+              ? `View herd (${elephantCount.toLocaleString()}) →`
               : locationId
-                ? "Named elephants →"
+                ? "View herd →"
                 : "Search elephants →"}
           </Link>
           <a
             href={elephantSeUrl}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
             className="text-muted hover:text-forest font-medium whitespace-nowrap transition-colors"
           >
             elephant.se ↗

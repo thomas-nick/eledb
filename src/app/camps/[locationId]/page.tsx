@@ -290,25 +290,36 @@ export default async function CampPage({ params }: CampPageProps) {
           )}
 
           <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-            <h2 className="font-serif text-2xl font-bold text-forest">
-              Elephants here
-              <span className="text-muted font-normal text-lg ml-2">
-                ({total.toLocaleString()} living)
-              </span>
-            </h2>
-            <a
-              href={locationElephantSeUrl(locationId)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-clay hover:text-forest font-medium"
-            >
-              View on elephant.se ↗
-            </a>
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-widest text-clay mb-1">Herd</p>
+              <h2 className="font-serif text-2xl font-bold text-forest">
+                Elephants at this camp
+                <span className="text-muted font-normal text-lg ml-2">
+                  ({total.toLocaleString()} living)
+                </span>
+              </h2>
+            </div>
+            <div className="flex flex-wrap gap-4 text-sm">
+              <Link
+                href={`/elephants?locationId=${locationId}&locationName=${encodeURIComponent(location.name)}&status=living`}
+                className="text-clay hover:text-forest font-medium"
+              >
+                Full herd list →
+              </Link>
+              <a
+                href={locationElephantSeUrl(locationId)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted hover:text-forest font-medium"
+              >
+                elephant.se ↗
+              </a>
+            </div>
           </div>
 
           {elephants.length > 0 ? (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div id="herd" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 scroll-mt-24">
                 {elephants.map((elephant) => (
                   <ElephantCard key={elephant.id} elephant={elephant} />
                 ))}
