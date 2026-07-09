@@ -210,8 +210,17 @@ export default async function CampPage({ params }: CampPageProps) {
                         Website →
                       </a>
                     )}
-                    <Link href="/sanctuaries" className="text-clay hover:text-forest font-medium">
-                      Full directory →
+                    <Link
+                      href={`/sanctuaries?s=${encodeURIComponent(s.id)}`}
+                      className="text-clay hover:text-forest font-medium"
+                    >
+                      Sanctuary directory entry →
+                    </Link>
+                    <Link
+                      href={`/elephants?locationId=${locationId}&locationName=${encodeURIComponent(location.name)}&status=living`}
+                      className="text-clay hover:text-forest font-medium"
+                    >
+                      All elephants here →
                     </Link>
                   </div>
                 </Card>

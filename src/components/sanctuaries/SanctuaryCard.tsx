@@ -13,6 +13,7 @@ import Link from "next/link";
 interface SanctuaryCardProps {
   sanctuary: Sanctuary;
   elephantCount?: number;
+  selected?: boolean;
   onSelect?: (sanctuary: Sanctuary) => void;
 }
 
@@ -25,12 +26,31 @@ const welfareLabels: { key: keyof Sanctuary["welfare"]; label: string }[] = [
   { key: "spaciousEnclosure", label: "Spacious" },
 ];
 
-export function SanctuaryCard({ sanctuary, elephantCount, onSelect }: SanctuaryCardProps) {
+function primaryHref(sanctuary: Sanctuary, locationId?: string): string {
+  if (locationId) return `/camps/${locationId}`;
+  return `/elephants?q=${encodeURIComponent(sanctuary.name)}&country=${encodeURIComponent(sanctuary.country)}`;
+}
+
+export function SanctuaryCard({
+  sanctuary,
+  elephantCount,
+  selected,
+  onSelect,
+}: SanctuaryCardProps) {
   const elephantSeUrl = elephantSeFacilityUrl(sanctuary);
   const locationId = getLocationIdForSanctuary(sanctuary.id);
+  const elephantsHref = primaryHref(sanctuary, locationId);
 
   return (
-    <Card hover className="cursor-pointer" onClick={() => onSelect?.(sanctuary)}>
+    <Card
+      hover
+      className={
+        selected
+          ? "cursor-pointer ring-2 ring-forest/40 border-forest/30"
+          : "cursor-pointer"
+      }
+      onClick={() => onSelect?.(sanctuary)}
+    >
       <div className="mb-3">
         <h3 className="font-serif text-xl font-bold text-forest">{sanctuary.name}</h3>
         <p className="text-sm text-muted">
@@ -97,23 +117,23 @@ export function SanctuaryCard({ sanctuary, elephantCount, onSelect }: SanctuaryC
           <span>Price: {sanctuary.priceRange}</span>
         </div>
         <div className="flex items-center gap-3">
-          {locationId && (
-            <Link
-              href={`/camps/${locationId}`}
-              onClick={(e) => e.stopPropagation()}
-              className="text-clay hover:text-forest font-medium whitespace-nowrap transition-colors"
-            >
-              {elephantCount != null && elephantCount > 0
-                ? `${elephantCount.toLocaleString()} elephants →`
-                : "Elephants →"}
-            </Link>
-          )}
+          <Link
+            href={elephantsHref}
+            onClick={(e) => e.stopPropagation()}
+            className="text-clay hover:text-forest font-medium whitespace-nowrap transition-colors"
+          >
+            {elephantCount != null && elephantCount > 0
+              ? `${elephantCount.toLocaleString()} elephants →`
+              : locationId
+                ? "Named elephants →"
+                : "Search elephants →"}
+          </Link>
           <a
             href={elephantSeUrl}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="text-clay hover:text-forest font-medium whitespace-nowrap transition-colors"
+            className="text-muted hover:text-forest font-medium whitespace-nowrap transition-colors"
           >
             elephant.se ↗
           </a>

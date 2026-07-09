@@ -78,14 +78,14 @@ export function ElephantDetailPanels({ elephant, linkedSanctuaries }: ElephantDe
         )}
       </Card>
 
-      {linkedSanctuaries.length > 0 && elephant.locationId && (
+      {linkedSanctuaries.length > 0 && (
         <Card className="p-6 bg-sage/10 border-sage/25">
           <PanelHeading className="text-sage">In our sanctuary directory</PanelHeading>
           <ul className="space-y-3">
             {linkedSanctuaries.map((s) => (
               <li key={s.id}>
                 <Link
-                  href={`/camps/${elephant.locationId}`}
+                  href={`/sanctuaries?s=${encodeURIComponent(s.id)}`}
                   className="font-serif text-lg font-bold text-forest hover:text-clay transition-colors"
                 >
                   {s.name}

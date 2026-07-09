@@ -49,7 +49,7 @@ export function CorridorCardMini({ corridor }: { corridor: Corridor }) {
 }
 
 export function SanctuaryMiniCard({ sanctuary }: { sanctuary: Sanctuary }) {
-  const href = `/sanctuaries?country=${encodeURIComponent(sanctuary.country)}`;
+  const href = `/sanctuaries?s=${encodeURIComponent(sanctuary.id)}`;
   return (
     <Link
       href={href}

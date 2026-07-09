@@ -58,17 +58,39 @@ export default function SanctuariesPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const country = params.get("country");
+    const sanctuaryId = params.get("s");
+    const experience = params.get("experience") as ExperienceType | "all" | null;
+
     if (country) setCountryFilter(country);
+    if (experience && experience !== "all") setExperienceFilter(experience);
+
+    if (sanctuaryId) {
+      const match = sanctuaries.find((s) => s.id === sanctuaryId);
+      if (match) {
+        setSelected(match);
+        if (match.country) setCountryFilter(match.country);
+        requestAnimationFrame(() => {
+          detailPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        });
+      }
+    }
   }, []);
 
   function handleSelect(sanctuary: Sanctuary) {
     setSelected(sanctuary);
+    const url = new URL(window.location.href);
+    url.searchParams.set("s", sanctuary.id);
+    window.history.replaceState({}, "", url.toString());
     requestAnimationFrame(() => {
       const isMobile = window.matchMedia("(max-width: 1023px)").matches;
       if (isMobile) {
         detailPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
     });
+  }
+
+  function applyExperienceFilter(types: ExperienceType[]) {
+    if (types[0]) setExperienceFilter(types[0]);
   }
 
   const countries = useMemo(
@@ -211,6 +233,7 @@ export default function SanctuariesPage() {
                     key={sanctuary.id}
                     sanctuary={sanctuary}
                     elephantCount={elephantCounts[sanctuary.id]}
+                    selected={selected?.id === sanctuary.id}
                     onSelect={handleSelect}
                   />
                 ))}
@@ -224,7 +247,7 @@ export default function SanctuariesPage() {
             </div>
 
             <div ref={detailPanelRef} className="space-y-6 lg:sticky lg:top-24 lg:self-start">
-              <ExperienceFinder />
+              <ExperienceFinder onSelect={applyExperienceFilter} />
 
               {selected && (
                 <Card>
@@ -298,38 +321,39 @@ export default function SanctuariesPage() {
                   </a>
 
                   {getLocationIdForSanctuary(selected.id) ? (
-                    <>
+                    <div className="mb-4 space-y-3">
                       {elephantCounts[selected.id] != null && elephantCounts[selected.id] > 0 && (
-                        <p className="text-sm text-muted mb-3">
+                        <p className="text-sm text-muted">
                           <span className="font-medium text-forest">
                             {elephantCounts[selected.id].toLocaleString()} named elephants
                           </span>{" "}
                           in the mahoot database from elephant.se at this camp.
                         </p>
                       )}
-                      <Link
-                        href={`/camps/${getLocationIdForSanctuary(selected.id)}`}
-                        className="text-sm text-clay hover:text-forest transition-colors mb-4 inline-block mr-4"
-                      >
-                        Camp profile &amp; named elephants &rarr;
-                      </Link>
-                    </>
+                      <div className="flex flex-wrap gap-3">
+                        <Link
+                          href={`/camps/${getLocationIdForSanctuary(selected.id)}`}
+                          className="inline-flex items-center rounded-lg bg-forest px-4 py-2 text-sm font-medium text-ivory hover:bg-forest-light transition-colors"
+                        >
+                          View camp &amp; elephants →
+                        </Link>
+                        <Link
+                          href={`/elephants?locationId=${getLocationIdForSanctuary(selected.id)}&locationName=${encodeURIComponent(selected.name)}&status=living`}
+                          className="inline-flex items-center rounded-lg border border-border px-4 py-2 text-sm font-medium text-forest hover:border-forest/40 transition-colors"
+                        >
+                          Browse elephant list →
+                        </Link>
+                      </div>
+                    </div>
                   ) : (
-                    <Link
-                      href={`/elephants?q=${encodeURIComponent(selected.name)}&country=${encodeURIComponent(selected.country)}`}
-                      className="text-sm text-clay hover:text-forest transition-colors mb-4 inline-block"
-                    >
-                      Search elephants here &rarr;
-                    </Link>
-                  )}
-
-                  {getLocationIdForSanctuary(selected.id) && (
-                    <Link
-                      href={`/elephants?locationId=${getLocationIdForSanctuary(selected.id)}&locationName=${encodeURIComponent(selected.name)}`}
-                      className="text-sm text-clay hover:text-forest transition-colors mb-4 inline-block"
-                    >
-                      Filter elephant list &rarr;
-                    </Link>
+                    <div className="mb-4">
+                      <Link
+                        href={`/elephants?q=${encodeURIComponent(selected.name)}&country=${encodeURIComponent(selected.country)}`}
+                        className="inline-flex items-center rounded-lg bg-forest px-4 py-2 text-sm font-medium text-ivory hover:bg-forest-light transition-colors"
+                      >
+                        Search elephants here →
+                      </Link>
+                    </div>
                   )}
 
                   {selected.contextNotes && selected.contextNotes.length > 0 && (

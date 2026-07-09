@@ -77,11 +77,13 @@ export function ExperienceFinder({ onSelect }: ExperienceFinderProps) {
             Start Over
           </Button>
           <Button
-            href="/sanctuaries"
             size="sm"
-            onClick={() => onSelect?.(result.types)}
+            onClick={() => {
+              onSelect?.(result.types);
+              setResultKey(null);
+            }}
           >
-            Browse Directory
+            Apply filter
           </Button>
         </div>
       </Card>
